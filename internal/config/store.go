@@ -343,3 +343,14 @@ func (s *ConfigStore) ImportCopilot() (*oauth.Token, bool) {
 	slog.Info("GitHub Copilot successfully imported")
 	return token, true
 }
+
+func (s *ConfigStore) SetTheme(scope Scope, theme string) error {
+	if s.config.Options == nil {
+		s.config.Options = &Options{}
+	}
+	if s.config.Options.TUI == nil {
+		s.config.Options.TUI = &TUIOptions{}
+	}
+	s.config.Options.TUI.Theme = theme
+	return s.SetConfigField(scope, "options.tui.theme", theme)
+}

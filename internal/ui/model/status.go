@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"charm.land/bubbles/v2/help"
+	"fmt"
+	"github.com/swadhinbiswas/ghost/internal/session"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
@@ -68,9 +70,15 @@ func (s *Status) SetHideHelp(hideHelp bool) {
 }
 
 // Draw draws the status bar onto the screen.
-func (s *Status) Draw(scr uv.Screen, area uv.Rectangle) {
+func (s *Status) Draw(scr uv.Screen, area uv.Rectangle, currentSession *session.Session) {
 	if !s.hideHelp {
 		helpView := s.com.Styles.Status.Help.Render(s.help.View(s.helpKm))
+		if currentSession != nil {
+			statsText := fmt.Sprintf(" \u2022 Cost: $%.4f \u2022 TOK: %d \u2022 Model: Ghost Pro", currentSession.Cost, currentSession.PromptTokens+currentSession.CompletionTokens)
+			statsRendered := lipgloss.NewStyle().Foreground(lipgloss.Color("#A3A3A3")).Render(statsText)
+			padWidth := max(0, area.Dx() - lipgloss.Width(helpView) - lipgloss.Width(statsRendered))
+			helpView += strings.Repeat(" ", padWidth) + statsRendered
+		}
 		uv.NewStyledString(helpView).Draw(scr, area)
 	}
 

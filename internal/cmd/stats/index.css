@@ -1,34 +1,34 @@
 :root {
-  /* Dark mode colors - charmtone dark palette */
-  --bg: #201f26;
-  --bg-secondary: #2d2c35;
-  --text: #fffaf1;
-  --text-muted: #858392;
+  /* Dark mode colors - Ghost cute dark palette */
+  --bg: #1a1b26;
+  --bg-secondary: #24283b;
+  --text: #c0caf5;
+  --text-muted: #565f89;
 
-  /* Charmtone colors (global - same in both light and dark modes) */
-  --charple: #6b50ff;
-  --cherry: #ff388b;
-  --julep: #00ffb2;
-  --urchin: #c337e0;
-  --butter: #fffaf1;
-  --squid: #858392;
-  --pepper: #201f26;
-  --iron: #4d4c57;
-  --tuna: #ff6daa;
-  --uni: #ff937d;
-  --coral: #ff577d;
-  --violet: #c259ff;
-  --malibu: #00a4ff;
-  --hazy: #8b75ff;
+  /* Ghost cute colors (global - same in both light and dark modes) */
+  --charple: #bb9af7;
+  --cherry: #f7768e;
+  --julep: #7dcfff;
+  --urchin: #ff9e64;
+  --butter: #7dcfff;
+  --squid: #9aa5ce;
+  --pepper: #1a1b26;
+  --iron: #414868;
+  --tuna: #f7768e;
+  --uni: #9d7cd8;
+  --coral: #f7768e;
+  --violet: #bb9af7;
+  --malibu: #7dcfff;
+  --hazy: #7aa2f7;
 }
 
-/* Light mode colors - charmtone light palette */
+/* Light mode colors - Ghost cute light palette */
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f0f0f0;
-    --bg-secondary: #fbfbfb;
-    --text: #201f26;
-    --text-muted: #4d4c57;
+    --bg: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --text: #414868;
+    --text-muted: #9aa5ce;
   }
 }
 
@@ -258,11 +258,10 @@ td {
 
 /* Override charm brand colors in footer */
 .footer-container .st2 {
-  fill: #fffaf1 !important;
+  fill: #c0caf5 !important;
 }
 
 @media (prefers-color-scheme: light) {
-
   /* Override charm brand colors in footer */
   .footer-container .st2 {
     fill: #644ced !important;

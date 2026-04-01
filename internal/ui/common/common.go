@@ -38,7 +38,7 @@ func (c *Common) Store() *config.ConfigStore {
 
 // DefaultCommon returns the default common UI configurations.
 func DefaultCommon(app *app.App) *Common {
-	s := styles.DefaultStyles()
+	s := styles.DefaultStyles(app.GetTheme())
 	return &Common{
 		App:    app,
 		Styles: &s,

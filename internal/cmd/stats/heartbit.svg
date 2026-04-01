@@ -1,43 +1,53 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.47 42.99">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #ff6daa;
-      }
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" shape-rendering="crispEdges">
 
-      .cls-2 {
-        fill: #ff13a9;
-      }
+  <!-- 👻 Ghost Body (refined symmetry) -->
+  <path fill="#bb9af7" d="
+    M60 20 H140
+    V40 H160
+    V60 H180
+    V120 H160
+    V140 H140
+    V160 H120
+    V180 H100
+    V160 H80
+    V180 H60
+    V160 H40
+    V140 H20
+    V120 H0
+    V60 H20
+    V40 H40
+    V20 H60
+    Z
+  "/>
 
-      .cls-3 {
-        fill: #ff388b;
-      }
-    </style>
-  </defs>
-  <g id="Header_HeartBit_04" data-name="Header HeartBit 04">
-    <g>
-      <polygon id="Heart_Pink" data-name="Heart Pink" class="cls-1" points="22.87 7.13 22.87 3.48 20.3 3.48 20.3 0 7.59 0 7.59 3.48 3.66 3.48 3.66 7.13 0 7.13 0 25.24 3.66 25.24 3.66 30.73 7.59 30.73 7.59 35.49 12.99 35.49 12.99 38.05 17.38 38.05 17.38 40.24 20.85 40.24 20.85 42.99 29.62 42.99 29.62 40.24 33.09 40.24 33.09 38.05 37.48 38.05 37.48 35.49 42.88 35.49 42.88 30.73 46.81 30.73 46.81 25.24 50.47 25.24 50.47 7.13 46.81 7.13 46.81 3.48 42.88 3.48 42.88 0 30.17 0 30.17 3.48 27.6 3.48 27.6 7.13 22.87 7.13"/>
-      <g>
-        <rect id="Face_02" data-name="Face 02" x="30.32" y="16.07" width="2.16" height="5.85"/>
-        <path d="M32.53,21.98h-2.27v-5.96h2.27v5.96Z"/>
-      </g>
-      <g>
-        <rect id="Face_02-2" data-name="Face 02" x="17.99" y="16.07" width="2.16" height="5.85"/>
-        <path d="M20.21,21.98h-2.27v-5.96h2.27v5.96Z"/>
-      </g>
-      <g>
-        <rect id="Face_02-3" data-name="Face 02" class="cls-2" x="14.44" y="22.11" width="2.16" height="2.16"/>
-        <path class="cls-3" d="M14.5,24.21h2.05v-2.05h-2.05v2.05Z"/>
-      </g>
-      <g>
-        <rect id="Face_02-4" data-name="Face 02" class="cls-2" x="33.87" y="22.11" width="2.16" height="2.16"/>
-        <path class="cls-3" d="M36.08,24.32h-2.27v-2.27h2.27v2.27Z"/>
-      </g>
-      <g>
-        <rect id="Face_02-5" data-name="Face 02" x="23.43" y="22.11" width="3.62" height="2.16"/>
-        <path d="M27.1,24.32h-3.73v-2.27h3.73v2.27Z"/>
-      </g>
-    </g>
-  </g>
+  <!-- 🌫️ Subtle shading (adds depth) -->
+  <path fill="#9f7aea" d="
+    M40 120 H160
+    V140 H140
+    V160 H120
+    V140 H100
+    V160 H80
+    V140 H60
+    V160 H40
+    Z
+  " opacity="0.35"/>
+
+  <!-- 👀 Eyes (centered & cleaner) -->
+  <rect x="72" y="78" width="12" height="22" fill="#0b0b10"/>
+  <rect x="116" y="78" width="12" height="22" fill="#0b0b10"/>
+
+  <!-- ✨ Eye highlights -->
+  <rect x="74" y="80" width="4" height="6" fill="#ffffff"/>
+  <rect x="118" y="80" width="4" height="6" fill="#ffffff"/>
+
+  <!-- 😊 Mouth (cuter + centered) -->
+  <rect x="90" y="112" width="20" height="10" fill="#0b0b10"/>
+
+  <!-- 👅 Tiny tongue -->
+  <rect x="95" y="116" width="10" height="6" fill="#ff6b9a"/>
+
+  <!-- 💖 Blush (better placement) -->
+  <rect x="58" y="104" width="12" height="10" fill="#ff4d88" opacity="0.8"/>
+  <rect x="130" y="104" width="12" height="10" fill="#ff4d88" opacity="0.8"/>
+
 </svg>

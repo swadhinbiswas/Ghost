@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
+	"github.com/invopop/jsonschema"
 	"github.com/swadhinbiswas/ghost/internal/csync"
 	"github.com/swadhinbiswas/ghost/internal/env"
 	"github.com/swadhinbiswas/ghost/internal/oauth"
 	"github.com/swadhinbiswas/ghost/internal/oauth/copilot"
-	"github.com/invopop/jsonschema"
 )
 
 const (
@@ -193,6 +193,7 @@ type LSPConfig struct {
 }
 
 type TUIOptions struct {
+	Theme       string `json:"theme,omitempty" jsonschema:"description=TUI coloring theme,default=Default"`
 	CompactMode bool   `json:"compact_mode,omitempty" jsonschema:"description=Enable compact mode for the TUI interface,default=false"`
 	DiffMode    string `json:"diff_mode,omitempty" jsonschema:"description=Diff mode for the TUI interface,enum=unified,enum=split"`
 	// Here we can add themes later or any TUI related options

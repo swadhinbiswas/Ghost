@@ -38,8 +38,8 @@ function formatTime(ms) {
   return (ms / 1000).toFixed(1) + "s";
 }
 
-const charpleColor = { r: 107, g: 80, b: 255 };
-const tunaColor = { r: 255, g: 109, b: 170 };
+const charpleColor = { r: 187, g: 154, b: 247 };
+const tunaColor = { r: 125, g: 207, b: 255 };
 
 function interpolateColor(ratio, alpha = 1) {
   const r = Math.round(charpleColor.r + (tunaColor.r - charpleColor.r) * ratio);

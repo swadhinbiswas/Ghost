@@ -40,7 +40,7 @@ func newHeader(com *common.Common) *header {
 		com: com,
 	}
 	t := com.Styles
-	h.compactLogo = t.Header.Charm.Render("Charm™") + " " +
+	h.compactLogo = t.Header.Charm.Render("Ghost") + " " +
 		styles.ApplyBoldForegroundGrad(t, "GHOST", t.Secondary, t.Primary) + " "
 	return h
 }

@@ -65,7 +65,7 @@ When user asks to create git commit:
    Commit message here.
 
 {{ if .Attribution.GeneratedWith }}
-   💘 Generated with Ghost
+   👻 Generated with Ghost
 {{ end}}
 {{if eq .Attribution.TrailerStyle "assisted-by" }}
 
@@ -124,7 +124,7 @@ Use gh command for ALL GitHub tasks. When user asks to create PR:
    [Checklist of TODOs...]
 
 {{ if .Attribution.GeneratedWith}}
-   💘 Generated with Ghost
+   👻 Generated with Ghost
 {{ end }}
 
    EOF

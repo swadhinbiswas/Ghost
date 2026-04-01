@@ -110,6 +110,8 @@ type openEditorMsg struct {
 }
 
 type (
+	tickLandingMsg time.Time
+
 	// cancelTimerExpiredMsg is sent when the cancel timer expires.
 	cancelTimerExpiredMsg struct{}
 	// userCommandsLoadedMsg is sent when user commands are loaded.
@@ -157,6 +159,7 @@ type UI struct {
 	// continueLastSession is set to continue the most recent session on startup.
 	continueLastSession bool
 
+	landingFrame        int
 	lastUserMessageTime int64
 
 	// The width and height of the terminal in cells.
@@ -359,6 +362,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 
 // Init initializes the UI model.
 func (m *UI) Init() tea.Cmd {
+	// It will naturally start ticking because of the tickLanding call in common commands if we need.
 	var cmds []tea.Cmd
 	if m.state == uiOnboarding {
 		if cmd := m.openModelsDialog(); cmd != nil {
@@ -1467,6 +1471,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 
 		if isOnboarding {
 			m.setState(uiLanding, uiFocusEditor)
+			m.landingFrame = 0
+			cmds = append(cmds, m.tickLanding())
+			cmds = append(cmds, m.tickLanding())
 			m.com.Config().SetupAgents()
 			if err := m.com.App.InitCoderAgent(context.TODO()); err != nil {
 				cmds = append(cmds, util.ReportError(err))
@@ -2040,7 +2047,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	// Add status and help layer
 	m.status.SetHideHelp(isOnboarding)
-	m.status.Draw(scr, layout.status)
+	m.status.Draw(scr, layout.status, m.session)
 
 	// Draw completions popup if open
 	if !isOnboarding && m.completionsOpen && m.completions.HasItems() {
@@ -3199,6 +3206,9 @@ func (m *UI) newSession() tea.Cmd {
 	m.sessionFiles = nil
 	m.sessionFileReads = nil
 	m.setState(uiLanding, uiFocusEditor)
+	m.landingFrame = 0
+	var cmds []tea.Cmd
+	cmds = append(cmds, m.tickLanding())
 	m.textarea.Focus()
 	m.chat.Blur()
 	m.chat.ClearMessages()

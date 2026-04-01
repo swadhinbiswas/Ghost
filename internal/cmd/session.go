@@ -429,7 +429,16 @@ func outputSessionJSON(w io.Writer, sess session.Session, msgs []*message.Messag
 }
 
 func outputSessionHuman(ctx context.Context, sess session.Session, msgs []*message.Message) error {
-	sty := styles.DefaultStyles()
+
+	themeName := "Default"
+	cwd, _ := os.Getwd()
+	if cfg, err := config.Load(cwd, "", false); err == nil {
+		if cfg.Config().Options != nil && cfg.Config().Options.TUI != nil && cfg.Config().Options.TUI.Theme != "" {
+			themeName = cfg.Config().Options.TUI.Theme
+		}
+	}
+	sty := styles.DefaultStyles(themeName)
+
 	toolResults := chat.BuildToolResultMap(msgs)
 
 	width := sessionOutputWidth

@@ -364,6 +364,18 @@ Git status (snapshot at conversation start - may be outdated):
 {{end}}
 </env>
 
+{{if .ProjectMemory}}
+<project_memory>
+The project has the following persistent rules and guidelines you MUST strictly adhere to.\
+
+{{range $k, $v := .ProjectMemory}}
+<fact id="{{$k}}">
+{{$v}}
+</fact>
+{{end}}
+</project_memory>
+{{end}}
+
 {{if gt (len .Config.LSP) 0}}
 <lsp>
 Diagnostics (lint/typecheck) included in tool output.

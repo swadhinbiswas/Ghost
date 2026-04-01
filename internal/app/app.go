@@ -219,7 +219,7 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	progress = app.config.Config().Options.Progress == nil || *app.config.Config().Options.Progress
 
 	if !hideSpinner && stderrTTY {
-		t := styles.DefaultStyles()
+		t := styles.DefaultStyles(app.GetTheme())
 
 		// Detect background color to set the appropriate color for the
 		// spinner's 'Generating...' text. Without this, that text would be
@@ -639,4 +639,15 @@ func (app *App) checkForUpdates(ctx context.Context) {
 		LatestVersion:  info.Latest,
 		IsDevelopment:  info.IsDevelopment(),
 	}
+}
+
+func (a *App) GetTheme() string {
+	if a.config == nil {
+		return "Default"
+	}
+	cfg := a.config.Config()
+	if cfg.Options == nil || cfg.Options.TUI == nil || cfg.Options.TUI.Theme == "" {
+		return "Default"
+	}
+	return cfg.Options.TUI.Theme
 }
