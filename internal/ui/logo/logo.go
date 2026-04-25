@@ -12,14 +12,6 @@ import (
 
 const diag = "╱"
 
-// Dracula Theme Colors
-var (
-	colorPurple = lipgloss.Color("#bb9af7")
-	colorPink   = lipgloss.Color("#ff4d88")
-	colorDark   = lipgloss.Color("#0b0b10")
-	colorFG     = lipgloss.Color("#f8f8f2")
-)
-
 type Opts struct {
 	FieldColor   color.Color
 	TitleColorA  color.Color
@@ -30,41 +22,30 @@ type Opts struct {
 }
 
 var ghostLines = []string{
-	"⠀⠀⠄⠀⠀⠂⠀⠀⠀⡀⠀⠀",
-	"⠁⠀⠀⣠⣶⣿⣷⣶⣄⠀⠀⠁",
-	"⠈⠀⢰⡿⠛⢿⡿⠻⣿⡆⠀⡀",
-	"⠀⠠⣾⡇⠀⢸⡇⠀⢸⣧⠀⠀",
-	"⠀⠀⣿⣷⣤⣿⣷⣤⣿⣿⠀⠀",
-	"⠠⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀⡀",
-	"⠄⡀⠙⠟⢿⣿⡿⠿⠿⠋⠀⠀",
+	` ________  ___  ___  ________  ________  _________   `,
+	`|\   ____\|\  \|\  \|\   __  \|\   ____\|\___   ___\ `,
+	`\ \  \___|\ \  \\\  \ \  \|\  \ \  \___|\|___ \  \_| `,
+	` \ \  \  __\ \   __  \ \  \\\  \ \_____  \   \ \  \  `,
+	`  \ \  \|\  \ \  \ \  \ \  \\\  \|____|\  \   \ \  \ `,
+	`   \ \_______\ \__\ \__\ \_______\____\_\  \   \ \__\`,
+	`    \|_______|\|__|\|__|\|_______|\_________\   \|__|`,
+	`                                 \|_________|        `,
 }
 
+// Render renders the full ASCII art Ghost logo using theme colors.
 func Render(s *styles.Styles, version string, compact bool, o Opts) string {
-	purple := lipgloss.NewStyle().Foreground(colorPurple)
-	pink := lipgloss.NewStyle().Foreground(colorPink)
-	fg := lipgloss.NewStyle().Foreground(colorFG)
+	primary := lipgloss.NewStyle().Foreground(s.Primary)
 
 	rendered := make([]string, len(ghostLines))
 	for i, line := range ghostLines {
-		switch i {
-		case 0:
-			rendered[i] = pink.Render(line)
-		case 1, 2:
-			rendered[i] = purple.Render(line)
-		case 3, 4:
-			rendered[i] = purple.Render(line)
-		case 5:
-			rendered[i] = purple.Bold(true).Render(line)
-		case 6:
-			rendered[i] = fg.Render(line)
-		}
+		rendered[i] = primary.Render(line)
 	}
 
-	logo := strings.Join(rendered, "\\n")
+	logo := strings.Join(rendered, "\n")
 
 	if version != "" {
 		ver := lipgloss.NewStyle().
-			Foreground(colorPink).
+			Foreground(s.Secondary).
 			Faint(true).
 			Render("v" + version)
 		logo = fmt.Sprintf("%s  %s", logo, ver)
@@ -73,6 +54,8 @@ func Render(s *styles.Styles, version string, compact bool, o Opts) string {
 	return logo
 }
 
+// SmallRender renders a compact "Ghost" text logo with a gradient and
+// trailing diagonal characters that fill the given width.
 func SmallRender(t *styles.Styles, width int) string {
 	title := t.Base.Foreground(t.Secondary).Render("Ghost")
 	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad(t, "Ghost", t.Secondary, t.Primary))
@@ -84,10 +67,10 @@ func SmallRender(t *styles.Styles, width int) string {
 
 	return title
 }
+
+// RenderAnimated renders the logo with a subtle floating animation.
 func RenderAnimated(s *styles.Styles, version string, compact bool, o Opts, frame int) string {
-	purple := lipgloss.NewStyle().Foreground(colorPurple)
-	pink := lipgloss.NewStyle().Foreground(colorPink)
-	fg := lipgloss.NewStyle().Foreground(colorFG)
+	primary := lipgloss.NewStyle().Foreground(s.Primary)
 
 	// Give feeling of floating up/down
 	floatOffset := frame % 4
@@ -100,34 +83,17 @@ func RenderAnimated(s *styles.Styles, version string, compact bool, o Opts, fram
 	bottomPadding := 2 - topPadding
 
 	for i := 0; i < topPadding; i++ {
-		rendered[i] = "                     "
+		rendered[i] = "                                                       "
 	}
 
 	idx := topPadding
-	for i, line := range ghostLines {
-		// blink eyes
-		if i == 3 && frame%10 < 2 {
-			line = strings.Replace(line, "⣿", "⠛", 2) // just fake blinking
-		}
-
-		switch i {
-		case 0:
-			// particles changing colors
-			rendered[idx] = pink.Foreground(colorPurple).Render(line)
-		case 1, 2:
-			rendered[idx] = purple.Render(line)
-		case 3, 4:
-			rendered[idx] = purple.Render(line)
-		case 5:
-			rendered[idx] = purple.Bold(true).Render(line)
-		case 6:
-			rendered[idx] = fg.Render(line)
-		}
+	for _, line := range ghostLines {
+		rendered[idx] = primary.Render(line)
 		idx++
 	}
 
 	for i := 0; i < bottomPadding; i++ {
-		rendered[idx] = "                     "
+		rendered[idx] = "                                                       "
 		idx++
 	}
 
@@ -135,7 +101,7 @@ func RenderAnimated(s *styles.Styles, version string, compact bool, o Opts, fram
 
 	if version != "" {
 		ver := lipgloss.NewStyle().
-			Foreground(colorPink).
+			Foreground(s.Secondary).
 			Faint(true).
 			Render("v" + version)
 		logo = fmt.Sprintf("%s  %s", logo, ver)

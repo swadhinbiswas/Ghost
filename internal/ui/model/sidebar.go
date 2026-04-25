@@ -105,18 +105,14 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 		return
 	}
 
-	const logoHeightBreakpoint = 30
-
 	t := m.com.Styles
 	width := area.Dx()
 	height := area.Dy()
 
 	title := t.Muted.Width(width).MaxHeight(2).Render(m.session.Title)
 	cwd := common.PrettyPath(t, m.com.Store().WorkingDir(), width)
-	sidebarLogo := m.sidebarLogo
-	if height < logoHeightBreakpoint {
-		sidebarLogo = logo.SmallRender(m.com.Styles, width)
-	}
+	// Always use the compact "Ghost" text logo in the sidebar for a cleaner look.
+	sidebarLogo := logo.SmallRender(m.com.Styles, width)
 	blocks := []string{
 		sidebarLogo,
 		title,

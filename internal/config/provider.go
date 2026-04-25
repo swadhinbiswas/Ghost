@@ -17,21 +17,15 @@ import (
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/catwalk/pkg/embedded"
+	"github.com/charmbracelet/x/etag"
 	"github.com/swadhinbiswas/ghost/internal/agent/hyper"
 	"github.com/swadhinbiswas/ghost/internal/csync"
 	"github.com/swadhinbiswas/ghost/internal/home"
-	"github.com/charmbracelet/x/etag"
 )
 
 type syncer[T any] interface {
 	Get(context.Context) (T, error)
 }
-
-var (
-	providerOnce sync.Once
-	providerList []catwalk.Provider
-	providerErr  error
-)
 
 // file to cache provider data
 func cachePathFor(name string) string {
@@ -130,6 +124,56 @@ var (
 	hyperSyncer   = &hyperSync{}
 )
 
+// allowedProviders is the set of provider IDs we want to keep.
+var allowedProviders = map[string]bool{
+	"nvidia-nim": true,
+	"groq":       true,
+	"opencode":   true,
+	"openrouter": true,
+}
+
+// mergeProviders overlays src on top of dst. If a provider ID in src already
+// exists in dst, the dst entry is replaced by src.
+func mergeProviders(dst, src []catwalk.Provider) []catwalk.Provider {
+	index := make(map[string]int, len(dst))
+	for i, p := range dst {
+		index[string(p.ID)] = i
+	}
+	for _, p := range src {
+		if i, ok := index[string(p.ID)]; ok {
+			dst[i] = p
+		} else {
+			dst = append(dst, p)
+			index[string(p.ID)] = len(dst) - 1
+		}
+	}
+	return dst
+}
+
+// filterProviders removes unwanted providers and models.
+// For openrouter, only models ending with ":free" are kept.
+func filterProviders(providers []catwalk.Provider) []catwalk.Provider {
+	filtered := make([]catwalk.Provider, 0, len(providers))
+	for _, p := range providers {
+		if !allowedProviders[string(p.ID)] {
+			continue
+		}
+
+		if p.ID == "openrouter" {
+			freeModels := make([]catwalk.Model, 0, len(p.Models))
+			for _, m := range p.Models {
+				if strings.HasSuffix(m.ID, ":free") {
+					freeModels = append(freeModels, m)
+				}
+			}
+			p.Models = freeModels
+		}
+
+		filtered = append(filtered, p)
+	}
+	return filtered
+}
+
 // Providers returns the list of providers, taking into account cached results
 // and whether or not auto update is enabled.
 //
@@ -140,55 +184,59 @@ var (
 // 3. try to get the fresh list of providers, and return either this new list,
 // the cached list, or the embedded list if all others fail.
 func Providers(cfg *Config) ([]catwalk.Provider, error) {
-	providerOnce.Do(func() {
-		var wg sync.WaitGroup
-		var errs []error
-		providers := csync.NewSlice[catwalk.Provider]()
-		autoupdate := !cfg.Options.DisableProviderAutoUpdate
-		customProvidersOnly := cfg.Options.DisableDefaultProviders
+	var wg sync.WaitGroup
+	var errs []error
+	providers := csync.NewSlice[catwalk.Provider]()
+	autoupdate := !cfg.Options.DisableProviderAutoUpdate
+	customProvidersOnly := cfg.Options.DisableDefaultProviders
 
-		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
 
-		wg.Go(func() {
-			if customProvidersOnly {
-				return
-			}
-			catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
-			client := catwalk.NewWithURL(catwalkURL)
-			path := cachePathFor("providers")
-			catwalkSyncer.Init(client, path, autoupdate)
+	wg.Go(func() {
+		if customProvidersOnly {
+			return
+		}
+		catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
+		client := catwalk.NewWithURL(catwalkURL)
+		path := cachePathFor("providers")
+		catwalkSyncer.Init(client, path, autoupdate)
 
-			items, err := catwalkSyncer.Get(ctx)
-			if err != nil {
-				catwalkURL := fmt.Sprintf("%s/v2/providers", cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL))
-				errs = append(errs, fmt.Errorf("Ghost was unable to fetch an updated list of providers from %s. Consider setting GHOST_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this Ghost release. You can also update providers manually. For more info see Ghost update-providers --help.\n\nCause: %w", catwalkURL, err)) //nolint:staticcheck
-				return
-			}
-			providers.Append(items...)
-		})
-
-		wg.Go(func() {
-			if customProvidersOnly || !hyper.Enabled() {
-				return
-			}
-			path := cachePathFor("hyper")
-			hyperSyncer.Init(realHyperClient{baseURL: hyper.BaseURL()}, path, autoupdate)
-
-			item, err := hyperSyncer.Get(ctx)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("Ghost was unable to fetch updated information from Hyper: %w", err)) //nolint:staticcheck
-				return
-			}
-			providers.Append(item)
-		})
-
-		wg.Wait()
-
-		providerList = slices.Collect(providers.Seq())
-		providerErr = errors.Join(errs...)
+		items, err := catwalkSyncer.Get(ctx)
+		if err != nil {
+			catwalkURL := fmt.Sprintf("%s/v2/providers", cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL))
+			errs = append(errs, fmt.Errorf("Ghost was unable to fetch an updated list of providers from %s. Consider setting GHOST_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this Ghost release. You can also update providers manually. For more info see Ghost update-providers --help.\n\nCause: %w", catwalkURL, err)) //nolint:staticcheck
+			return
+		}
+		providers.Append(items...)
 	})
-	return providerList, providerErr
+
+	wg.Go(func() {
+		if customProvidersOnly || !hyper.Enabled() {
+			return
+		}
+		path := cachePathFor("hyper")
+		hyperSyncer.Init(realHyperClient{baseURL: hyper.BaseURL()}, path, autoupdate)
+
+		item, err := hyperSyncer.Get(ctx)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("Ghost was unable to fetch updated information from Hyper: %w", err)) //nolint:staticcheck
+			return
+		}
+		providers.Append(item)
+	})
+
+	wg.Wait()
+
+	providerList := slices.Collect(providers.Seq())
+	providerList = append(providerList, getLocalProviders()...)
+
+	// Overlay dynamically-fetched providers (OpenCode, OpenRouter) so their
+	// model lists are always fresh. Dynamic providers override registry/local.
+	providerList = mergeProviders(providerList, fetchDynamicProviders())
+
+	providerErr := errors.Join(errs...)
+	return filterProviders(providerList), providerErr
 }
 
 type cache[T any] struct {

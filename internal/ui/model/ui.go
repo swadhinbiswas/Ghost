@@ -1398,6 +1398,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			return util.NewInfoMsg("Transparent background " + status)
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionSetTheme:
+		m.dialog.CloseDialog(dialog.ThemePickerID)
+		cmds = append(cmds, m.applyTheme(msg.Theme))
 	case dialog.ActionQuit:
 		cmds = append(cmds, tea.Quit)
 	case dialog.ActionEnableDockerMCP:
@@ -1429,7 +1432,20 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		var (
 			providerID   = msg.Model.Provider
 			isCopilot    = providerID == string(catwalk.InferenceProviderCopilot)
-			isConfigured = func() bool { _, ok := cfg.Providers.Get(providerID); return ok }
+			isConfigured = func() bool {
+				p, ok := cfg.Providers.Get(providerID)
+				if !ok {
+					return false
+				}
+				// Provider has an API key template but no resolved key → needs auth.
+				if p.APIKeyTemplate != "" {
+					resolved, _ := m.com.App.Store().Resolve(p.APIKeyTemplate)
+					if resolved == "" {
+						return false
+					}
+				}
+				return true
+			}
 		)
 
 		// Attempt to import GitHub Copilot tokens from VSCode if available.
@@ -2360,6 +2376,24 @@ func (m *UI) toggleCompactMode() tea.Cmd {
 	return nil
 }
 
+// cycleTheme rotates to the next available theme and applies it immediately.
+func (m *UI) applyTheme(themeName string) tea.Cmd {
+	if err := m.com.Store().SetTheme(config.ScopeGlobal, themeName); err != nil {
+		return util.ReportError(err)
+	}
+
+	// Rebuild styles with the new theme.
+	newStyles := styles.DefaultStyles(themeName)
+	m.com.Styles = &newStyles
+
+	// Update sub-components that cache styles.
+	m.textarea.SetStyles(m.com.Styles.TextArea)
+
+	return func() tea.Msg {
+		return util.NewInfoMsg("Theme: " + themeName)
+	}
+}
+
 // updateLayoutAndSize updates the layout and sizes of UI components.
 func (m *UI) updateLayoutAndSize() {
 	// Determine if we should be in compact mode
@@ -3028,11 +3062,27 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openQuitDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ThemePickerID:
+		if cmd := m.openThemePickerDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	default:
 		// Unknown dialog
 		break
 	}
 	return tea.Batch(cmds...)
+}
+
+// openThemePickerDialog opens the theme picker dialog.
+func (m *UI) openThemePickerDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ThemePickerID) {
+		m.dialog.BringToFront(dialog.ThemePickerID)
+		return nil
+	}
+
+	tp := dialog.NewThemePicker(m.com)
+	m.dialog.OpenDialog(tp)
+	return nil
 }
 
 // openQuitDialog opens the quit confirmation dialog.

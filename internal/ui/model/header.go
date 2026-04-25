@@ -25,8 +25,7 @@ const (
 )
 
 type header struct {
-	// cached logo and compact logo
-	logo        string
+	// cached compact logo
 	compactLogo string
 
 	com     *common.Common
@@ -55,19 +54,15 @@ func (h *header) drawHeader(
 	width int,
 ) {
 	t := h.com.Styles
-	if width != h.width || compact != h.compact {
-		h.logo = renderLogo(h.com.Styles, compact, width)
-	}
 
 	h.width = width
 	h.compact = compact
 
-	if !compact || session == nil || h.com.App == nil {
-		uv.NewStyledString(h.logo).Draw(scr, area)
+	if session == nil || session.ID == "" || h.com.App == nil {
 		return
 	}
 
-	if session.ID == "" {
+	if !compact {
 		return
 	}
 

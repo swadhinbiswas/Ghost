@@ -7,24 +7,19 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/swadhinbiswas/ghost/internal/agent/hyper"
 	xetag "github.com/charmbracelet/x/etag"
+	"github.com/swadhinbiswas/ghost/internal/agent/hyper"
 )
 
 type hyperClient interface {
 	Get(context.Context, string) (catwalk.Provider, error)
 }
 
-var _ syncer[catwalk.Provider] = (*hyperSync)(nil)
-
 type hyperSync struct {
-	once       sync.Once
-	result     catwalk.Provider
 	cache      cache[catwalk.Provider]
 	client     hyperClient
 	autoupdate bool
@@ -43,42 +38,33 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 		panic("called Get before Init")
 	}
 
-	var throwErr error
-	s.once.Do(func() {
-		if !s.autoupdate {
-			slog.Info("Using embedded Hyper provider")
-			s.result = hyper.Embedded()
-			return
-		}
+	if !s.autoupdate {
+		slog.Info("Using embedded Hyper provider")
+		return hyper.Embedded(), nil
+	}
 
-		cached, etag, cachedErr := s.cache.Get()
-		if cached.ID == "" || cachedErr != nil {
-			// if cached file is empty, default to embedded provider
-			cached = hyper.Embedded()
-		}
+	cached, etag, cachedErr := s.cache.Get()
+	if cached.ID == "" || cachedErr != nil {
+		// if cached file is empty, default to embedded provider
+		cached = hyper.Embedded()
+	}
 
-		slog.Info("Fetching Hyper provider")
-		result, err := s.client.Get(ctx, etag)
-		if errors.Is(err, context.DeadlineExceeded) {
-			slog.Warn("Hyper provider not updated in time")
-			s.result = cached
-			return
-		}
-		if errors.Is(err, catwalk.ErrNotModified) {
-			slog.Info("Hyper provider not modified")
-			s.result = cached
-			return
-		}
-		if len(result.Models) == 0 {
-			slog.Warn("Hyper did not return any models")
-			s.result = cached
-			return
-		}
+	slog.Info("Fetching Hyper provider")
+	result, err := s.client.Get(ctx, etag)
+	if errors.Is(err, context.DeadlineExceeded) {
+		slog.Warn("Hyper provider not updated in time")
+		return cached, nil
+	}
+	if errors.Is(err, catwalk.ErrNotModified) {
+		slog.Info("Hyper provider not modified")
+		return cached, nil
+	}
+	if len(result.Models) == 0 {
+		slog.Warn("Hyper did not return any models")
+		return cached, nil
+	}
 
-		s.result = result
-		throwErr = s.cache.Store(result)
-	})
-	return s.result, throwErr
+	return result, s.cache.Store(result)
 }
 
 var _ hyperClient = realHyperClient{}

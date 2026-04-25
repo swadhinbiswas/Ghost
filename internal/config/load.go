@@ -17,14 +17,14 @@ import (
 	"testing"
 
 	"charm.land/catwalk/pkg/catwalk"
+	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
+	"github.com/qjebbs/go-jsons"
 	"github.com/swadhinbiswas/ghost/internal/agent/hyper"
 	"github.com/swadhinbiswas/ghost/internal/csync"
 	"github.com/swadhinbiswas/ghost/internal/env"
 	"github.com/swadhinbiswas/ghost/internal/fsext"
 	"github.com/swadhinbiswas/ghost/internal/home"
 	"github.com/swadhinbiswas/ghost/internal/log"
-	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
-	"github.com/qjebbs/go-jsons"
 )
 
 const defaultCatwalkURL = "https://catwalk.charm.sh"
@@ -288,6 +288,12 @@ func (c *Config) configureProviders(store *ConfigStore, env env.Env, resolver Va
 					return fmt.Errorf("bedrock provider only supports anthropic models for now, found: %s", model.ID)
 				}
 			}
+		case "opencode":
+			// OpenCode Zen free models do not require an API key.
+			// Skip the API key check so free-tier users can use it out of the box.
+		case "nvidia-nim":
+			// Nvidia NIM is shown in the model list even without an API key.
+			// If the user selects it without a key, the auth dialog will prompt.
 		default:
 			// if the provider api or endpoint are missing we skip them
 			v, err := resolver.ResolveValue(p.APIKey)

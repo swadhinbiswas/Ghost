@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/swadhinbiswas/ghost/internal/config"
+	"github.com/swadhinbiswas/ghost/internal/fsext"
 	"github.com/swadhinbiswas/ghost/internal/home"
 	"github.com/swadhinbiswas/ghost/internal/shell"
 	"github.com/swadhinbiswas/ghost/internal/skills"
@@ -96,13 +97,33 @@ func (p *Prompt) Build(ctx context.Context, provider, model string, store *confi
 }
 
 func processFile(filePath string) *ContextFile {
-	content, err := os.ReadFile(filePath)
+	info, err := os.Stat(filePath)
 	if err != nil {
 		return nil
 	}
+
+	// Skip files larger than 100KB to avoid massive token bloat
+	const maxContextFileSize = 100 * 1024
+	var contentString string
+
+	if info.Size() > maxContextFileSize {
+		contentString = fmt.Sprintf("[File omitted from initial context: Too large (%d bytes). Use the view tool to examine specific parts of this file if needed.]", info.Size())
+	} else {
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil
+		}
+		// Basic binary check
+		if strings.Contains(string(content), "\x00") {
+			contentString = "[Binary file omitted from context]"
+		} else {
+			contentString = string(content)
+		}
+	}
+
 	return &ContextFile{
 		Path:    filePath,
-		Content: string(content),
+		Content: contentString,
 	}
 }
 
@@ -116,12 +137,22 @@ func processContextPath(p string, store *config.ConfigStore) []ContextFile {
 	if err != nil {
 		return contexts
 	}
+
+	walker := fsext.NewFastGlobWalker(store.WorkingDir())
+
 	if info.IsDir() {
 		filepath.WalkDir(fullPath, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if !d.IsDir() {
+			if d.IsDir() {
+				if walker.ShouldSkip(path) || d.Name() == ".git" {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+
+			if !walker.ShouldSkip(path) {
 				if result := processFile(path); result != nil {
 					contexts = append(contexts, *result)
 				}
@@ -129,8 +160,7 @@ func processContextPath(p string, store *config.ConfigStore) []ContextFile {
 			return nil
 		})
 	} else {
-		result := processFile(fullPath)
-		if result != nil {
+		if result := processFile(fullPath); result != nil {
 			contexts = append(contexts, *result)
 		}
 	}

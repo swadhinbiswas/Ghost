@@ -630,8 +630,10 @@ func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map
 
 func (c *coordinator) buildOpenaiProvider(baseURL, apiKey string, headers map[string]string) (fantasy.Provider, error) {
 	opts := []openai.Option{
-		openai.WithAPIKey(apiKey),
 		openai.WithUseResponsesAPI(),
+	}
+	if apiKey != "" {
+		opts = append(opts, openai.WithAPIKey(apiKey))
 	}
 	if c.cfg.Config().Options.Debug {
 		httpClient := log.NewHTTPClient()
@@ -677,7 +679,9 @@ func (c *coordinator) buildVercelProvider(_, apiKey string, headers map[string]s
 func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers map[string]string, extraBody map[string]any, providerID string, isSubAgent bool) (fantasy.Provider, error) {
 	opts := []openaicompat.Option{
 		openaicompat.WithBaseURL(baseURL),
-		openaicompat.WithAPIKey(apiKey),
+	}
+	if apiKey != "" {
+		opts = append(opts, openaicompat.WithAPIKey(apiKey))
 	}
 
 	// Set HTTP client based on provider and debug mode.

@@ -49,7 +49,7 @@ const (
 	BashToolName = "bash"
 
 	DefaultAutoBackgroundAfter = 60 // Commands taking longer automatically become background jobs
-	MaxOutputLength            = 30000
+	MaxOutputLength            = 12000
 	BashNoOutput               = "no output"
 )
 
