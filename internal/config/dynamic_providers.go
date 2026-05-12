@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,8 +28,35 @@ type openCodeModelsResponse struct {
 	} `json:"data"`
 }
 
-// fetchOpenCodeFreeModels returns only models whose IDs end with "-free".
-func fetchOpenCodeFreeModels() ([]catwalk.Model, error) {
+var openCodeLargeModelPreferences = []string{
+	"big-pickle",
+}
+
+var openCodeSmallModelPreferences = []string{
+	"deepseek-v4-flash-free",
+	"minimax-m2.5-free",
+	"ring-2.6-1t-free",
+	"nemotron-3-super-free",
+}
+
+var openCodeDisplayNameOverrides = map[string]string{
+	"big-pickle":             "Big Pickle",
+	"deepseek-v4-flash-free": "DeepSeek V4 Flash Free",
+	"minimax-m2.5-free":      "MiniMax M2.5 Free",
+	"ring-2.6-1t-free":       "Ring 2.6 1T Free",
+	"nemotron-3-super-free":  "Nemotron 3 Super Free",
+}
+
+var openCodeFreeModelIDs = map[string]struct{}{
+	"big-pickle":             {},
+	"deepseek-v4-flash-free": {},
+	"minimax-m2.5-free":      {},
+	"ring-2.6-1t-free":       {},
+	"nemotron-3-super-free":  {},
+}
+
+// fetchOpenCodeModels returns the models exposed by the OpenCode Zen model list.
+func fetchOpenCodeModels() ([]catwalk.Model, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -53,19 +81,106 @@ func fetchOpenCodeFreeModels() ([]catwalk.Model, error) {
 		return nil, fmt.Errorf("opencode: decode response: %w", err)
 	}
 
-	var models []catwalk.Model
+	var (
+		models []catwalk.Model
+		seen   = make(map[string]struct{})
+	)
 	for _, m := range parsed.Data {
-		if !strings.HasSuffix(m.ID, "-free") {
+		if m.ID == "" {
 			continue
 		}
+		if _, ok := openCodeFreeModelIDs[m.ID]; !ok {
+			continue
+		}
+		if _, ok := seen[m.ID]; ok {
+			continue
+		}
+		seen[m.ID] = struct{}{}
 		models = append(models, catwalk.Model{
 			ID:               m.ID,
-			Name:             displayNameFromID(m.ID),
+			Name:             displayNameFromOpenCodeID(m.ID),
 			ContextWindow:    128000,
 			DefaultMaxTokens: 8192,
 		})
 	}
+
+	sortOpenCodeModels(models)
 	return models, nil
+}
+
+func sortOpenCodeModels(models []catwalk.Model) {
+	priority := func(id string) int {
+		for i, preferred := range append(openCodeLargeModelPreferences, openCodeSmallModelPreferences...) {
+			if id == preferred {
+				return i
+			}
+		}
+		if strings.Contains(id, "free") {
+			return len(openCodeLargeModelPreferences) + len(openCodeSmallModelPreferences)
+		}
+		return len(openCodeLargeModelPreferences) + len(openCodeSmallModelPreferences) + 1
+	}
+
+	sort.SliceStable(models, func(i, j int) bool {
+		pi := priority(models[i].ID)
+		pj := priority(models[j].ID)
+		if pi != pj {
+			return pi < pj
+		}
+		return models[i].ID < models[j].ID
+	})
+}
+
+func displayNameFromOpenCodeID(id string) string {
+	if name, ok := openCodeDisplayNameOverrides[id]; ok {
+		return name
+	}
+	return displayNameFromID(id)
+}
+
+func pickOpenCodeModelID(models []catwalk.Model, preferredIDs []string) string {
+	if len(models) == 0 {
+		return ""
+	}
+
+	lookup := make(map[string]struct{}, len(models))
+	for _, model := range models {
+		lookup[model.ID] = struct{}{}
+	}
+	for _, preferredID := range preferredIDs {
+		if _, ok := lookup[preferredID]; ok {
+			return preferredID
+		}
+	}
+
+	return models[0].ID
+}
+
+func pickOpenCodeSmallModelID(models []catwalk.Model, largeModelID string) string {
+	if len(models) == 0 {
+		return ""
+	}
+
+	lookup := make(map[string]struct{}, len(models))
+	for _, model := range models {
+		lookup[model.ID] = struct{}{}
+	}
+	for _, preferredID := range openCodeSmallModelPreferences {
+		if preferredID == largeModelID {
+			continue
+		}
+		if _, ok := lookup[preferredID]; ok {
+			return preferredID
+		}
+	}
+
+	for _, model := range models {
+		if model.ID != largeModelID {
+			return model.ID
+		}
+	}
+
+	return largeModelID
 }
 
 // openRouterModelsResponse matches the OpenRouter /api/v1/models endpoint.
@@ -206,15 +321,17 @@ func fetchDynamicProviders() []catwalk.Provider {
 	var out []catwalk.Provider
 
 	// 1. OpenCode Zen – fetch first so we can use its model list to deduplicate OpenRouter.
-	ocModels, _ := fetchOpenCodeFreeModels()
+	ocModels, _ := fetchOpenCodeModels()
 	if len(ocModels) > 0 {
+		largeModelID := pickOpenCodeModelID(ocModels, openCodeLargeModelPreferences)
+		smallModelID := pickOpenCodeSmallModelID(ocModels, largeModelID)
 		out = append(out, catwalk.Provider{
 			ID:                  "opencode",
 			Name:                "OpenCode Zen",
 			APIEndpoint:         "https://opencode.ai/zen/v1",
 			Type:                catwalk.TypeOpenAICompat,
-			DefaultLargeModelID: ocModels[0].ID,
-			DefaultSmallModelID: ocModels[0].ID,
+			DefaultLargeModelID: largeModelID,
+			DefaultSmallModelID: smallModelID,
 			Models:              ocModels,
 		})
 	}

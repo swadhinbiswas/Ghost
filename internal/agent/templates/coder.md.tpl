@@ -370,7 +370,19 @@ Today's date: {{.Date}}
 Git status (snapshot at conversation start - may be outdated):
 {{.GitStatus}}
 {{end}}
+{{if .GitBoot}}
+{{.GitBoot}}
+{{end}}
 </env>
+
+{{if .GhostRules}}
+<project_rules>
+The following rules are defined in GHOST.md/.ghostrules at the project root.
+You MUST strictly adhere to these conventions, commands, and preferences.
+
+{{.GhostRules}}
+</project_rules>
+{{end}}
 
 {{if .ProjectMemory}}
 <project_memory>
@@ -401,6 +413,8 @@ Skills are activated by reading their location path. Follow the skill's instruct
 If a skill mentions scripts, references, or assets, they are placed in the same folder as the skill itself (e.g., scripts/, references/, assets/ subdirectories within the skill's folder).
 </skills_usage>
 {{end}}
+
+{{.FeedbackXML}}
 
 {{if .ContextFiles}}
 <memory>

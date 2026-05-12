@@ -20,6 +20,7 @@ import (
 	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
 	"github.com/qjebbs/go-jsons"
 	"github.com/swadhinbiswas/ghost/internal/agent/hyper"
+	"github.com/swadhinbiswas/ghost/internal/collab"
 	"github.com/swadhinbiswas/ghost/internal/csync"
 	"github.com/swadhinbiswas/ghost/internal/env"
 	"github.com/swadhinbiswas/ghost/internal/fsext"
@@ -430,6 +431,11 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	if str, ok := os.LookupEnv("GHOST_DISABLE_DEFAULT_PROVIDERS"); ok {
 		c.Options.DisableDefaultProviders, _ = strconv.ParseBool(str)
 	}
+	if str, ok := os.LookupEnv("GHOST_COLLAB_SHARE_URL"); ok && str != "" {
+		c.Options.CollabShareURL = str
+	} else if c.Options.CollabShareURL == "" {
+		c.Options.CollabShareURL = collab.DefaultShareURL
+	}
 
 	if c.Options.Attribution == nil {
 		c.Options.Attribution = &Attribution{
@@ -495,6 +501,42 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 	if len(knownProviders) == 0 && c.Providers.Len() == 0 {
 		err = fmt.Errorf("no providers configured, please configure at least one provider")
 		return largeModel, smallModel, err
+	}
+
+	preferredProviderIDs := []string{"opencode", "openrouter"}
+	for _, providerID := range preferredProviderIDs {
+		providerConfig, ok := c.Providers.Get(providerID)
+		if !ok || providerConfig.Disable {
+			continue
+		}
+		for _, p := range knownProviders {
+			if string(p.ID) != providerID {
+				continue
+			}
+			defaultLargeModel := c.GetModel(providerID, p.DefaultLargeModelID)
+			if defaultLargeModel == nil {
+				continue
+			}
+			largeModel = SelectedModel{
+				Provider:        providerID,
+				Model:           defaultLargeModel.ID,
+				MaxTokens:       defaultLargeModel.DefaultMaxTokens,
+				ReasoningEffort: defaultLargeModel.DefaultReasoningEffort,
+			}
+
+			defaultSmallModel := c.GetModel(providerID, p.DefaultSmallModelID)
+			if defaultSmallModel == nil {
+				smallModel = largeModel
+				return largeModel, smallModel, nil
+			}
+			smallModel = SelectedModel{
+				Provider:        providerID,
+				Model:           defaultSmallModel.ID,
+				MaxTokens:       defaultSmallModel.DefaultMaxTokens,
+				ReasoningEffort: defaultSmallModel.DefaultReasoningEffort,
+			}
+			return largeModel, smallModel, nil
+		}
 	}
 
 	// Use the first provider enabled based on the known providers order

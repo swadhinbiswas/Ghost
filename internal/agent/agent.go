@@ -612,7 +612,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		return nil
 	}
 
-	aiMsgs, _ := a.preparePrompt(msgs)
+	aiMsgs, _ := a.preparePromptWithCompression(msgs, true)
 
 	genCtx, cancel := context.WithCancel(ctx)
 	a.activeRequests.Set(sessionID, cancel)
@@ -739,6 +739,10 @@ func (a *sessionAgent) createUserMessage(ctx context.Context, call SessionAgentC
 }
 
 func (a *sessionAgent) preparePrompt(msgs []message.Message, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
+	return a.preparePromptWithCompression(msgs, false, attachments...)
+}
+
+func (a *sessionAgent) preparePromptWithCompression(msgs []message.Message, compress bool, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
 	var history []fantasy.Message
 	if !a.isSubAgent {
 		history = append(history, fantasy.NewUserMessage(
@@ -758,7 +762,13 @@ If not, please feel free to ignore. Again do not mention this message to the use
 		if m.Role == message.Assistant && len(m.ToolCalls()) == 0 && m.Content().Text == "" && m.ReasoningContent().String() == "" {
 			continue
 		}
-		history = append(history, m.ToAIMessage()...)
+		if compress {
+			// Smart compression: strip verbose tool outputs, keep essentials
+			compressed := compressToolOutputs(m)
+			history = append(history, compressed.ToAIMessage()...)
+		} else {
+			history = append(history, m.ToAIMessage()...)
+		}
 	}
 
 	var files []fantasy.FilePart
@@ -774,6 +784,31 @@ If not, please feel free to ignore. Again do not mention this message to the use
 	}
 
 	return history, files
+}
+
+// compressToolOutputs creates a compressed version of a message by truncating
+// verbose tool outputs while preserving structure and key information.
+func compressToolOutputs(msg message.Message) message.Message {
+	if msg.Role != message.Tool {
+		return msg
+	}
+
+	compressed := msg
+	for i, part := range compressed.Parts {
+		textPart, ok := part.(message.TextContent)
+		if !ok {
+			continue
+		}
+		text := textPart.Text
+		lines := strings.Split(text, "\n")
+		if len(lines) > 50 {
+			// Keep first 20 lines, last 10 lines, and a truncation notice
+			kept := append(lines[:20], "\n... (truncated "+strconv.Itoa(len(lines)-30)+" lines) ...\n")
+			kept = append(kept, lines[len(lines)-10:]...)
+			compressed.Parts[i] = message.TextContent{Text: strings.Join(kept, "\n")}
+		}
+	}
+	return compressed
 }
 
 func (a *sessionAgent) getSessionMessages(ctx context.Context, session session.Session) ([]message.Message, error) {

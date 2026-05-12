@@ -8,6 +8,7 @@ INSERT INTO sessions (
     completion_tokens,
     cost,
     summary_message_id,
+    shared,
     updated_at,
     created_at
 ) VALUES (
@@ -19,6 +20,7 @@ INSERT INTO sessions (
     ?,
     ?,
     null,
+    0,
     strftime('%s', 'now'),
     strftime('%s', 'now')
 ) RETURNING *;
@@ -48,7 +50,15 @@ SET
     completion_tokens = ?,
     summary_message_id = ?,
     cost = ?,
-    todos = ?
+    todos = ?,
+    shared = ?
+WHERE id = ?
+RETURNING *;
+
+-- name: UpdateSessionShared :one
+UPDATE sessions
+SET
+    shared = ?
 WHERE id = ?
 RETURNING *;
 

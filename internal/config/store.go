@@ -3,6 +3,7 @@ package config
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -153,11 +154,18 @@ func (s *ConfigStore) SetCompactMode(scope Scope, enabled bool) error {
 
 // SetTransparentBackground sets the transparent background setting and persists it.
 func (s *ConfigStore) SetTransparentBackground(scope Scope, enabled bool) error {
-	if s.config.Options == nil {
-		s.config.Options = &Options{}
+	if s == nil {
+		return errors.New("store not initialized")
 	}
-	s.config.Options.TUI.Transparent = &enabled
 	return s.SetConfigField(scope, "options.tui.transparent", enabled)
+}
+
+// SetPlanMode sets the plan mode setting and persists it.
+func (s *ConfigStore) SetPlanMode(scope Scope, enabled bool) error {
+	if s == nil {
+		return errors.New("store not initialized")
+	}
+	return s.SetConfigField(scope, "options.tui.plan_mode", enabled)
 }
 
 // SetProviderAPIKey sets the API key for a provider and persists it.

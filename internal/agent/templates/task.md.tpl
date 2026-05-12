@@ -11,4 +11,16 @@ Working directory: {{.WorkingDir}}
 Is directory a git repo: {{if .IsGitRepo}} yes {{else}} no {{end}}
 Platform: {{.Platform}}
 Today's date: {{.Date}}
+{{if .GitStatus}}
+{{.GitStatus}}
+{{end}}
+{{if .GitBoot}}
+{{.GitBoot}}
+{{end}}
 </env>
+
+{{if .GhostRules}}
+<project_rules>
+{{.GhostRules}}
+</project_rules>
+{{end}}

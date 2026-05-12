@@ -37,6 +37,7 @@ type Service interface {
 	GetByPathAndSession(ctx context.Context, path, sessionID string) (File, error)
 	ListBySession(ctx context.Context, sessionID string) ([]File, error)
 	ListLatestSessionFiles(ctx context.Context, sessionID string) ([]File, error)
+	ListVersions(ctx context.Context, path string) ([]File, error)
 	Delete(ctx context.Context, id string) error
 	DeleteSessionFiles(ctx context.Context, sessionID string) error
 }
@@ -167,6 +168,19 @@ func (s *service) ListBySession(ctx context.Context, sessionID string) ([]File, 
 
 func (s *service) ListLatestSessionFiles(ctx context.Context, sessionID string) ([]File, error) {
 	dbFiles, err := s.q.ListLatestSessionFiles(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	files := make([]File, len(dbFiles))
+	for i, dbFile := range dbFiles {
+		files[i] = s.fromDBItem(dbFile)
+	}
+	return files, nil
+}
+
+// ListVersions returns all versions of a file ordered by version number.
+func (s *service) ListVersions(ctx context.Context, path string) ([]File, error) {
+	dbFiles, err := s.q.ListFilesByPath(ctx, path)
 	if err != nil {
 		return nil, err
 	}

@@ -193,14 +193,19 @@ type LSPConfig struct {
 }
 
 type TUIOptions struct {
-	Theme       string `json:"theme,omitempty" jsonschema:"description=TUI coloring theme,default=Default"`
-	CompactMode bool   `json:"compact_mode,omitempty" jsonschema:"description=Enable compact mode for the TUI interface,default=false"`
-	DiffMode    string `json:"diff_mode,omitempty" jsonschema:"description=Diff mode for the TUI interface,enum=unified,enum=split"`
+	Theme              string  `json:"theme,omitempty" jsonschema:"description=TUI coloring theme,default=Default"`
+	CompactMode        bool    `json:"compact_mode,omitempty" jsonschema:"description=Enable compact mode for the TUI interface,default=false"`
+	DiffMode           string  `json:"diff_mode,omitempty" jsonschema:"description=Diff mode for the TUI interface,enum=unified,enum=split"`
+	ShowTerminalTitle  *bool   `json:"show_terminal_title,omitempty" jsonschema:"description=Show session title in terminal window title bar,default=true"`
+	ShowUsername       *bool   `json:"show_username,omitempty" jsonschema:"description=Show username in chat messages,default=true"`
+	ScrollSpeed        float64 `json:"scroll_speed,omitempty" jsonschema:"description=Scroll speed multiplier for chat view,default=1.0"`
+	ScrollAcceleration *bool   `json:"scroll_acceleration,omitempty" jsonschema:"description=Enable smooth scroll acceleration (macOS-style),default=false"`
 	// Here we can add themes later or any TUI related options
 	//
 
 	Completions Completions `json:"completions,omitzero" jsonschema:"description=Completions UI options"`
 	Transparent *bool       `json:"transparent,omitempty" jsonschema:"description=Enable transparent background for the TUI interface,default=false"`
+	PlanMode    bool        `json:"plan_mode,omitempty" jsonschema:"description=Enable plan mode (read-only exploration),default=false"`
 }
 
 // Completions defines options for the completions UI.
@@ -245,6 +250,7 @@ type Options struct {
 	ContextPaths              []string     `json:"context_paths,omitempty" jsonschema:"description=Paths to files containing context information for the AI,example=.cursorrules,example=GHOST.md"`
 	SkillsPaths               []string     `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/Ghost/skills,example=./skills"`
 	TUI                       *TUIOptions  `json:"tui,omitempty" jsonschema:"description=Terminal user interface options"`
+	CollabShareURL            string       `json:"collab_share_url,omitempty" jsonschema:"description=Base WebSocket URL used when generating collaboration share links,example=ws://ghost.example.com:8787"`
 	Debug                     bool         `json:"debug,omitempty" jsonschema:"description=Enable debug logging,default=false"`
 	DebugLSP                  bool         `json:"debug_lsp,omitempty" jsonschema:"description=Enable debug logging for LSP servers,default=false"`
 	DisableAutoSummarize      bool         `json:"disable_auto_summarize,omitempty" jsonschema:"description=Disable automatic conversation summarization,default=false"`

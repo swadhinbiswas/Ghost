@@ -113,15 +113,11 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 	cwd := common.PrettyPath(t, m.com.Store().WorkingDir(), width)
 	// Always use the compact "Ghost" text logo in the sidebar for a cleaner look.
 	sidebarLogo := logo.SmallRender(m.com.Styles, width)
-	blocks := []string{
-		sidebarLogo,
-		title,
-		"",
-		cwd,
-		"",
-		m.modelInfo(width),
-		"",
+	blocks := []string{sidebarLogo, title}
+	if m.session.Shared {
+		blocks = append(blocks, t.Subtle.Render("shared"))
 	}
+	blocks = append(blocks, "", cwd, "", m.modelInfo(width), "")
 
 	sidebarHeader := lipgloss.JoinVertical(
 		lipgloss.Left,

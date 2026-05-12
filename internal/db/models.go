@@ -49,4 +49,5 @@ type Session struct {
 	CreatedAt        int64
 	SummaryMessageID sql.NullString
 	Todos            sql.NullString
+	Shared           int64
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ import (
 	"github.com/swadhinbiswas/ghost/internal/agent"
 	"github.com/swadhinbiswas/ghost/internal/agent/notify"
 	"github.com/swadhinbiswas/ghost/internal/agent/tools/mcp"
+	"github.com/swadhinbiswas/ghost/internal/collab"
 	"github.com/swadhinbiswas/ghost/internal/config"
 	"github.com/swadhinbiswas/ghost/internal/db"
 	"github.com/swadhinbiswas/ghost/internal/event"
@@ -544,7 +546,40 @@ func (app *App) InitCoderAgent(ctx context.Context) error {
 		slog.Error("Failed to create coder agent", "err", err)
 		return err
 	}
+
+	// Start collaboration WebSocket server
+	go app.startCollabServer(ctx)
+
 	return nil
+}
+
+// startCollabServer starts the collaboration WebSocket server.
+func (app *App) startCollabServer(ctx context.Context) {
+	hub := app.CollabHub()
+	if hub == nil {
+		return
+	}
+
+	addr := collab.DefaultListenAddr
+	slog.Info("Starting collaboration server", "addr", addr)
+	if err := http.ListenAndServe(addr, hub); err != nil {
+		slog.Error("Collaboration server failed", "error", err)
+	}
+}
+
+// CollabHub returns the collaboration hub if the agent coordinator is ready.
+func (app *App) CollabHub() *collab.Hub {
+	if app == nil || app.AgentCoordinator == nil {
+		return nil
+	}
+	return app.AgentCoordinator.CollabHub()
+}
+
+// SetPaneController sets the multiplexer pane controller on the agent coordinator.
+func (app *App) SetPaneController(ctrl agent.PaneController) {
+	if app.AgentCoordinator != nil {
+		app.AgentCoordinator.SetPaneController(ctrl)
+	}
 }
 
 // Subscribe sends events to the TUI as tea.Msgs.

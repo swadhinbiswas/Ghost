@@ -76,6 +76,9 @@ func (s *SessionItem) Cursor() *tea.Cursor {
 // Render returns the string representation of the session item.
 func (s *SessionItem) Render(width int) string {
 	info := humanize.Time(time.Unix(s.UpdatedAt, 0))
+	if s.Shared {
+		info = "shared " + info
+	}
 	styles := ListItemStyles{
 		ItemBlurred:     s.t.Dialog.NormalItem,
 		ItemFocused:     s.t.Dialog.SelectedItem,

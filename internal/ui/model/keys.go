@@ -30,6 +30,13 @@ type KeyMap struct {
 		Tab            key.Binding
 		Details        key.Binding
 		TogglePills    key.Binding
+		ToggleMulti    key.Binding
+		Undo           key.Binding
+		Redo           key.Binding
+		Compact        key.Binding
+		Share          key.Binding
+		Export         key.Binding
+		Thinking       key.Binding
 		PillLeft       key.Binding
 		PillRight      key.Binding
 		Down           key.Binding
@@ -47,6 +54,8 @@ type KeyMap struct {
 		Copy           key.Binding
 		ClearHighlight key.Binding
 		Expand         key.Binding
+		CycleModel     key.Binding
+		ToggleSidebar  key.Binding
 	}
 
 	Initialize struct {
@@ -175,6 +184,42 @@ func DefaultKeyMap() KeyMap {
 	km.Chat.TogglePills = key.NewBinding(
 		key.WithKeys("ctrl+t", "ctrl+space"),
 		key.WithHelp("ctrl+t", "toggle tasks"),
+	)
+	km.Chat.ToggleMulti = key.NewBinding(
+		key.WithKeys("ctrl+m"),
+		key.WithHelp("ctrl+m", "toggle multiplexer"),
+	)
+	km.Chat.Undo = key.NewBinding(
+		key.WithKeys("ctrl+u"),
+		key.WithHelp("ctrl+u", "undo"),
+	)
+	km.Chat.Redo = key.NewBinding(
+		key.WithKeys("ctrl+r"),
+		key.WithHelp("ctrl+r", "redo"),
+	)
+	km.Chat.Compact = key.NewBinding(
+		key.WithKeys("ctrl+k"),
+		key.WithHelp("ctrl+k", "compact"),
+	)
+	km.Chat.Share = key.NewBinding(
+		key.WithKeys("ctrl+y"),
+		key.WithHelp("ctrl+y", "share"),
+	)
+	km.Chat.Export = key.NewBinding(
+		key.WithKeys("ctrl+e"),
+		key.WithHelp("ctrl+e", "export"),
+	)
+	km.Chat.Thinking = key.NewBinding(
+		key.WithKeys("ctrl+h"),
+		key.WithHelp("ctrl+h", "toggle thinking"),
+	)
+	km.Chat.CycleModel = key.NewBinding(
+		key.WithKeys("f2"),
+		key.WithHelp("f2", "cycle model"),
+	)
+	km.Chat.ToggleSidebar = key.NewBinding(
+		key.WithKeys("ctrl+b"),
+		key.WithHelp("ctrl+b", "toggle sidebar"),
 	)
 	km.Chat.PillLeft = key.NewBinding(
 		key.WithKeys("left"),

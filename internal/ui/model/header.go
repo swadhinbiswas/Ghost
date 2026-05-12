@@ -119,6 +119,9 @@ func renderHeaderDetails(
 	if errorCount > 0 {
 		parts = append(parts, t.LSP.ErrorDiagnostic.Render(fmt.Sprintf("%s%d", styles.LSPErrorIcon, errorCount)))
 	}
+	if session.Shared {
+		parts = append(parts, t.Subtle.Render("shared"))
+	}
 
 	agentCfg := com.Config().Agents[config.AgentCoder]
 	model := com.Config().GetModelByType(agentCfg.Model)

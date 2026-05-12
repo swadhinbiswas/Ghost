@@ -254,6 +254,24 @@ func NewToolMessageItem(
 		item = NewReferencesToolMessageItem(sty, toolCall, result, canceled)
 	case tools.LSPRestartToolName:
 		item = NewLSPRestartToolMessageItem(sty, toolCall, result, canceled)
+	case tools.SwarmToolName:
+		item = NewSwarmToolMessageItem(sty, toolCall, result, canceled)
+	case tools.SymbolsToolName:
+		item = NewSymbolsToolMessageItem(sty, toolCall, result, canceled)
+	case tools.ScreenshotToolName:
+		item = NewScreenshotToolMessageItem(sty, toolCall, result, canceled)
+	case tools.FeedbackToolName:
+		item = NewFeedbackToolMessageItem(sty, toolCall, result, canceled)
+	case tools.CollabToolName:
+		item = NewCollabToolMessageItem(sty, toolCall, result, canceled)
+	case tools.MultiplexToolName:
+		item = NewMultiplexToolMessageItem(sty, toolCall, result, canceled)
+	case tools.PluginToolName:
+		item = NewPluginToolMessageItem(sty, toolCall, result, canceled)
+	case tools.UndoToolName:
+		item = NewUndoToolMessageItem(sty, toolCall, result, canceled)
+	case tools.TestToolName:
+		item = NewTestToolMessageItem(sty, toolCall, result, canceled)
 	default:
 		if IsDockerMCPTool(toolCall.Name) {
 			item = NewDockerMCPToolMessageItem(sty, toolCall, result, canceled)
@@ -1053,7 +1071,7 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 		return t.formatWebFetchResultForCopy()
 	case agent.AgentToolName:
 		return t.formatAgentResultForCopy()
-	case tools.DownloadToolName, tools.GrepToolName, tools.GlobToolName, tools.LSToolName, tools.SourcegraphToolName, tools.DiagnosticsToolName, tools.TodosToolName:
+	case tools.DownloadToolName, tools.GrepToolName, tools.GlobToolName, tools.LSToolName, tools.SourcegraphToolName, tools.DiagnosticsToolName, tools.TodosToolName, tools.SwarmToolName, tools.SymbolsToolName, tools.ScreenshotToolName, tools.FeedbackToolName, tools.CollabToolName, tools.MultiplexToolName, tools.PluginToolName, tools.UndoToolName, tools.TestToolName:
 		return fmt.Sprintf("```\n%s\n```", t.result.Content)
 	default:
 		return t.result.Content
@@ -1405,6 +1423,20 @@ func prettifyToolName(name string) string {
 		return "View"
 	case tools.WriteToolName:
 		return "Write"
+	case tools.SwarmToolName:
+		return "Swarm"
+	case tools.SymbolsToolName:
+		return "Symbols"
+	case tools.ScreenshotToolName:
+		return "Screenshot"
+	case tools.FeedbackToolName:
+		return "Feedback"
+	case tools.CollabToolName:
+		return "Collaborate"
+	case tools.MultiplexToolName:
+		return "Multiplexer"
+	case tools.PluginToolName:
+		return "Plugins"
 	default:
 		return genericPrettyName(name)
 	}

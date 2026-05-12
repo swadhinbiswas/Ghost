@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/swadhinbiswas/ghost/internal/config"
+	"github.com/swadhinbiswas/ghost/internal/feedback"
 	"github.com/swadhinbiswas/ghost/internal/fsext"
 	"github.com/swadhinbiswas/ghost/internal/home"
 	"github.com/swadhinbiswas/ghost/internal/shell"
@@ -37,9 +38,12 @@ type PromptDat struct {
 	Platform      string
 	Date          string
 	GitStatus     string
+	GitBoot       string
 	ContextFiles  []ContextFile
 	ProjectMemory map[string]string
 	AvailSkillXML string
+	GhostRules    string
+	FeedbackXML   string
 }
 
 type ContextFile struct {
@@ -213,6 +217,12 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		json.Unmarshal(memData, &projectMemory)
 	}
 
+	// Load project rules from GHOST.md or .ghostrules
+	ghostRules := loadProjectRules(workingDir)
+
+	// Load feedback history for learning
+	feedbackXML := loadFeedbackContext(workingDir)
+
 	isGit := isGitRepo(store.WorkingDir())
 	data := PromptDat{
 		Provider:      provider,
@@ -224,10 +234,16 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		Platform:      platform,
 		Date:          p.now().Format("1/2/2006"),
 		AvailSkillXML: availSkillXML,
+		GhostRules:    ghostRules,
+		FeedbackXML:   feedbackXML,
 	}
 	if isGit {
 		var err error
 		data.GitStatus, err = getGitStatus(ctx, store.WorkingDir())
+		if err != nil {
+			return PromptDat{}, err
+		}
+		data.GitBoot, err = getGitBootContext(ctx, store.WorkingDir())
 		if err != nil {
 			return PromptDat{}, err
 		}
@@ -242,6 +258,60 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 func isGitRepo(dir string) bool {
 	_, err := os.Stat(filepath.Join(dir, ".git"))
 	return err == nil
+}
+
+// loadProjectRules reads GHOST.md or .ghostrules from the working directory root.
+// Returns the content as a string, or empty if neither file exists.
+func loadProjectRules(workingDir string) string {
+	candidates := []string{"GHOST.md", ".ghostrules", "CLAUDE.md"}
+	for _, name := range candidates {
+		path := filepath.Join(workingDir, name)
+		data, err := os.ReadFile(path)
+		if err == nil {
+			return strings.TrimSpace(string(data))
+		}
+	}
+	return ""
+}
+
+// getGitBootContext returns a concise summary of the repository state for boot injection.
+func getGitBootContext(ctx context.Context, dir string) (string, error) {
+	sh := shell.NewShell(&shell.Options{
+		WorkingDir: dir,
+	})
+
+	var sb strings.Builder
+
+	// Branch
+	branch, err := getGitBranch(ctx, sh)
+	if err == nil && branch != "" {
+		sb.WriteString(branch)
+	}
+
+	// Uncommitted changes summary
+	untracked, _, _ := sh.Exec(ctx, "git status --short | grep '^\\?\\?' | wc -l | tr -d ' '")
+	modified, _, _ := sh.Exec(ctx, "git status --short | grep -v '^\\?\\?' | wc -l | tr -d ' '")
+	if untracked != "" || modified != "" {
+		sb.WriteString(fmt.Sprintf("Untracked files: %s | Modified/Staged: %s\n", untracked, modified))
+	}
+
+	// Stashes
+	stash, _, _ := sh.Exec(ctx, "git stash list 2>/dev/null | wc -l | tr -d ' '")
+	if stash != "" && stash != "0" {
+		sb.WriteString(fmt.Sprintf("Stashes: %s\n", stash))
+	}
+
+	// Upstream status
+	ahead, _, _ := sh.Exec(ctx, "git rev-list --count HEAD @{u} 2>/dev/null || echo 0")
+	behind, _, _ := sh.Exec(ctx, "git rev-list --count @{u} HEAD 2>/dev/null || echo 0")
+	if ahead != "" && behind != "" {
+		sb.WriteString(fmt.Sprintf("Upstream: ahead %s, behind %s\n", ahead, behind))
+	}
+
+	if sb.Len() == 0 {
+		return "", nil
+	}
+	return fmt.Sprintf("Git boot context:\n%s\n", sb.String()), nil
 }
 
 func getGitStatus(ctx context.Context, dir string) (string, error) {
@@ -298,4 +368,35 @@ func getGitRecentCommits(ctx context.Context, sh *shell.Shell) (string, error) {
 
 func (p *Prompt) Name() string {
 	return p.name
+}
+
+// loadFeedbackContext loads feedback history and formats it for prompt injection.
+func loadFeedbackContext(workingDir string) string {
+	store, err := feedback.NewStore(workingDir)
+	if err != nil {
+		return ""
+	}
+
+	stats := store.GetStats()
+	if stats.Total == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("\n<user_feedback_history>\n")
+	sb.WriteString(fmt.Sprintf("Total feedback received: %d\n", stats.Total))
+	sb.WriteString(fmt.Sprintf("Satisfaction rate: %.1f%%\n", stats.SatisfactionRate))
+
+	insights := store.GetPatternInsights()
+	if len(insights) > 0 {
+		sb.WriteString("\nPatterns identified from your feedback:\n")
+		for _, insight := range insights {
+			sb.WriteString(fmt.Sprintf("- %s\n", insight))
+		}
+	}
+
+	sb.WriteString("\nUse this feedback to improve your responses. Pay special attention to negative feedback patterns.\n")
+	sb.WriteString("</user_feedback_history>\n")
+
+	return sb.String()
 }

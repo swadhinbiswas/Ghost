@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -33,6 +34,7 @@ import (
 	agenttools "github.com/swadhinbiswas/ghost/internal/agent/tools"
 	"github.com/swadhinbiswas/ghost/internal/agent/tools/mcp"
 	"github.com/swadhinbiswas/ghost/internal/app"
+	"github.com/swadhinbiswas/ghost/internal/collab"
 	"github.com/swadhinbiswas/ghost/internal/commands"
 	"github.com/swadhinbiswas/ghost/internal/config"
 	"github.com/swadhinbiswas/ghost/internal/fsext"
@@ -50,6 +52,7 @@ import (
 	"github.com/swadhinbiswas/ghost/internal/ui/dialog"
 	fimage "github.com/swadhinbiswas/ghost/internal/ui/image"
 	"github.com/swadhinbiswas/ghost/internal/ui/logo"
+	"github.com/swadhinbiswas/ghost/internal/ui/multiplexer"
 	"github.com/swadhinbiswas/ghost/internal/ui/notification"
 	"github.com/swadhinbiswas/ghost/internal/ui/styles"
 	"github.com/swadhinbiswas/ghost/internal/ui/util"
@@ -260,6 +263,24 @@ type UI struct {
 		index    int
 		draft    string
 	}
+
+	undoStack []undoBatch
+
+	// Terminal multiplexer for pane management
+	multiplexer *multiplexer.Multiplexer
+	multiMode   bool // true when multiplexer is active
+
+	// Feature flags and toggles
+	showThinking    bool     // whether to show thinking/reasoning blocks
+	showUsername    bool     // whether to show username in chat
+	showSidebar     bool     // whether sidebar is visible
+	recentModels    []string // recently used models for cycling
+	currentModelIdx int      // index in recentModels for current model
+}
+
+type undoBatch struct {
+	sessionID string
+	messages  []message.Message
 }
 
 // New creates a new instance of the [UI] model.
@@ -324,6 +345,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 		notifyWindowFocused: true,
 		initialSessionID:    initialSessionID,
 		continueLastSession: continueLast,
+		multiplexer:         multiplexer.New(com.Styles),
 	}
 
 	status := NewStatus(com, ui)
@@ -356,6 +378,16 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	ui.progressBarEnabled = opts.Progress == nil || *opts.Progress
 	// enable transparent mode
 	ui.isTransparent = opts.TUI.Transparent != nil && *opts.TUI.Transparent
+	// initialize feature toggles from config
+	ui.showUsername = opts.TUI.ShowUsername == nil || *opts.TUI.ShowUsername
+	ui.showSidebar = true  // sidebar visible by default
+	ui.showThinking = true // show thinking blocks by default
+
+	// Wire up multiplexer as pane controller for the agent
+	com.App.SetPaneController(newMPAdapter(ui.multiplexer))
+
+	// Set initial terminal title
+	ui.updateTerminalTitle()
 
 	return ui
 }
@@ -495,6 +527,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 	case loadSessionMsg:
+		if m.session == nil || m.session.ID != msg.session.ID {
+			m.undoStack = nil
+		}
 		if m.forceCompactMode {
 			m.isCompact = true
 		}
@@ -522,6 +557,8 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.historyReset()
 		cmds = append(cmds, m.loadPromptHistory())
 		m.updateLayoutAndSize()
+		// Update terminal title with session name
+		m.updateTerminalTitle()
 
 	case sessionFilesUpdatesMsg:
 		m.sessionFiles = msg.sessionFiles
@@ -772,9 +809,23 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Otherwise handle mouse wheel for chat.
 		switch m.state {
 		case uiChat:
+			// Calculate scroll amount with acceleration support
+			scrollAmount := MouseScrollThreshold
+			if m.com.Config().Options.TUI.ScrollAcceleration != nil && *m.com.Config().Options.TUI.ScrollAcceleration {
+				// Apply acceleration based on config scroll speed
+				speed := m.com.Config().Options.TUI.ScrollSpeed
+				if speed <= 0 {
+					speed = 1.0
+				}
+				scrollAmount = int(float64(MouseScrollThreshold) * speed)
+				if scrollAmount < 1 {
+					scrollAmount = 1
+				}
+			}
+
 			switch msg.Button {
 			case tea.MouseWheelUp:
-				if cmd := m.chat.ScrollByAndAnimate(-MouseScrollThreshold); cmd != nil {
+				if cmd := m.chat.ScrollByAndAnimate(-scrollAmount); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				if !m.chat.SelectedItemInView() {
@@ -784,7 +835,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			case tea.MouseWheelDown:
-				if cmd := m.chat.ScrollByAndAnimate(MouseScrollThreshold); cmd != nil {
+				if cmd := m.chat.ScrollByAndAnimate(scrollAmount); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				if !m.chat.SelectedItemInView() {
@@ -1296,6 +1347,21 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		m.com.App.Permissions.SetSkipRequests(yolo)
 		m.setEditorPrompt(yolo)
 		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionTogglePlanMode:
+		cfg := m.com.Config()
+		if cfg != nil && cfg.Options != nil && cfg.Options.TUI != nil {
+			newVal := !cfg.Options.TUI.PlanMode
+			if err := m.com.Store().SetPlanMode(config.ScopeGlobal, newVal); err != nil {
+				cmds = append(cmds, util.ReportError(err))
+			} else {
+				status := "enabled"
+				if !newVal {
+					status = "disabled"
+				}
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Plan mode "+status)))
+			}
+		}
+		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleNotifications:
 		cfg := m.com.Config()
 		if cfg != nil && cfg.Options != nil {
@@ -1681,6 +1747,61 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			}
 			cmds = append(cmds, tea.Suspend)
 			return true
+		case key.Matches(msg, m.keyMap.Chat.ToggleMulti):
+			m.multiMode = !m.multiMode
+			m.updateLayoutAndSize()
+			return true
+		case key.Matches(msg, m.keyMap.Chat.Undo):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleUndo(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.Redo):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleRedo(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.Compact):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleCompact(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.Share):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleShare(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.Export):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleExport(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.Thinking):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleThinkingToggle(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.CycleModel):
+			if m.state == uiChat && m.hasSession() {
+				m.cycleModel(false)
+				return true
+			}
+		case key.Matches(msg, m.keyMap.Chat.ToggleSidebar):
+			m.showSidebar = !m.showSidebar
+			m.updateLayoutAndSize()
+			return true
 		}
 		return false
 	}
@@ -1773,6 +1894,13 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				value = strings.TrimSpace(value)
 				if value == "exit" || value == "quit" {
 					return m.openQuitDialog()
+				}
+
+				// Check for slash commands
+				if cmd, args, isCommand := commands.ParseCommand(value); isCommand {
+					m.textarea.Reset()
+					m.historyReset()
+					return m.handleSlashCommand(cmd, args)
 				}
 
 				attachments := m.attachments.List()
@@ -2092,6 +2220,15 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		debug.Draw(scr, image.Rectangle{
 			Min: image.Pt(4, 1),
 			Max: image.Pt(8, 3),
+		})
+	}
+
+	// Draw multiplexer if active
+	if m.multiMode {
+		m.multiplexer.SetSize(area.Dx(), area.Dy()-layout.status.Dy())
+		m.multiplexer.Draw(scr, uv.Rectangle{
+			Min: image.Pt(0, 0),
+			Max: image.Pt(area.Dx(), area.Dy()-layout.status.Dy()),
 		})
 	}
 
@@ -2946,6 +3083,9 @@ func (m *UI) sendMessage(content string, attachments ...message.Attachment) tea.
 		return util.ReportError(fmt.Errorf("coder agent is not initialized"))
 	}
 
+	// Any new user prompt invalidates the redo stack.
+	m.undoStack = nil
+
 	var cmds []tea.Cmd
 	if !m.hasSession() {
 		newSession, err := m.com.App.Sessions.Create(context.Background(), "New Session")
@@ -3495,10 +3635,15 @@ func (m *UI) drawSessionDetails(scr uv.Screen, area uv.Rectangle) {
 	title := s.CompactDetails.Title.Width(width).MaxHeight(2).Render(m.session.Title)
 	blocks := []string{
 		title,
+	}
+	if m.session.Shared {
+		blocks = append(blocks, s.Subtle.Render("shared"))
+	}
+	blocks = append(blocks,
 		"",
 		m.modelInfo(width),
 		"",
-	}
+	)
 
 	detailsHeader := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -3643,6 +3788,521 @@ func (m *UI) disableDockerMCP() tea.Msg {
 	}
 
 	return util.NewInfoMsg("Docker MCP disabled successfully")
+}
+
+// handleSlashCommand routes slash commands to their handlers
+func (m *UI) handleSlashCommand(cmd string, args string) tea.Cmd {
+	var cmds []tea.Cmd
+
+	switch cmd {
+	case "undo":
+		return m.handleUndo()
+	case "redo":
+		return m.handleRedo()
+	case "compact", "summarize":
+		return m.handleCompact()
+	case "share":
+		return m.handleShare()
+	case "unshare":
+		return m.handleUnshare()
+	case "export":
+		return m.handleExport()
+	case "editor":
+		if m.isAgentBusy() {
+			cmds = append(cmds, util.ReportWarn("Agent is working, please wait..."))
+			return tea.Batch(cmds...)
+		}
+		return m.openEditor(m.textarea.Value())
+	case "thinking":
+		return m.handleThinkingToggle()
+	case "username":
+		return m.handleUsernameToggle()
+	case "title":
+		return m.handleTerminalTitleToggle()
+	case "details":
+		m.detailsOpen = !m.detailsOpen
+		m.updateLayoutAndSize()
+		action := "shown"
+		if !m.detailsOpen {
+			action = "hidden"
+		}
+		return util.ReportInfo("Tool details " + action)
+	case "connect":
+		return m.openConnectDialog()
+	case "new", "clear":
+		if !m.hasSession() {
+			return nil
+		}
+		if m.isAgentBusy() {
+			return util.ReportWarn("Agent is busy, please wait before starting a new session...")
+		}
+		return m.newSession()
+	case "fork":
+		if !m.hasSession() {
+			return util.ReportWarn("No active session to fork")
+		}
+		if m.isAgentBusy() {
+			return util.ReportWarn("Agent is busy, please wait...")
+		}
+		return m.handleForkSession(args)
+	case "help":
+		m.status.ToggleHelp()
+		m.updateLayoutAndSize()
+		return nil
+	case "models":
+		return m.openModelsDialog()
+	case "sessions", "resume", "continue":
+		return m.openSessionsDialog()
+	case "themes":
+		return m.openThemePickerDialog()
+	default:
+		// Check if it's a custom command
+		for _, customCmd := range m.customCommands {
+			if customCmd.Name == "user:"+cmd || customCmd.Name == "project:"+cmd || customCmd.Name == cmd {
+				return m.runCustomCommand(customCmd, args)
+			}
+		}
+
+		// Check MCP prompts
+		for _, mcpPrompt := range m.mcpPrompts {
+			if mcpPrompt.ID == cmd {
+				return m.runMCPPromptDialog(mcpPrompt)
+			}
+		}
+
+		// Unknown command
+		cmds = append(cmds, util.ReportWarn("Unknown command: /"+cmd))
+		return tea.Batch(cmds...)
+	}
+}
+
+// handleUndo implements the /undo command
+func (m *UI) handleUndo() tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session")
+	}
+
+	if m.isAgentBusy() {
+		return util.ReportWarn("Agent is busy, please wait...")
+	}
+
+	sessionID := m.session.ID
+
+	return func() tea.Msg {
+		if !m.hasSession() || m.session.ID != sessionID {
+			return util.ReportWarn("Session changed, retry")()
+		}
+
+		ctx := context.Background()
+		msgs, err := m.com.App.Messages.List(ctx, sessionID)
+		if err != nil {
+			return util.ReportError(err)()
+		}
+
+		undoStart := -1
+		for i := len(msgs) - 1; i >= 0; i-- {
+			if msgs[i].Role == message.User {
+				undoStart = i
+				break
+			}
+		}
+		if undoStart == -1 {
+			return util.ReportWarn("No user message to undo")
+		}
+
+		batch := append([]message.Message(nil), msgs[undoStart:]...)
+
+		for i := len(msgs) - 1; i >= undoStart; i-- {
+			if err := m.com.App.Messages.Delete(ctx, msgs[i].ID); err != nil {
+				return util.ReportError(err)()
+			}
+		}
+
+		m.undoStack = append(m.undoStack, undoBatch{sessionID: sessionID, messages: batch})
+
+		return m.loadSession(sessionID)()
+	}
+}
+
+// handleRedo implements the /redo command
+func (m *UI) handleRedo() tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session")
+	}
+
+	if len(m.undoStack) == 0 {
+		return util.ReportWarn("Nothing to redo")
+	}
+
+	batch := m.undoStack[len(m.undoStack)-1]
+	m.undoStack = m.undoStack[:len(m.undoStack)-1]
+	return func() tea.Msg {
+		if !m.hasSession() || m.session.ID != batch.sessionID {
+			return util.ReportWarn("Session changed, retry")()
+		}
+
+		ctx := context.Background()
+		for _, msg := range batch.messages {
+			parts := prepareRedoParts(msg)
+			if _, err := m.com.App.Messages.Create(ctx, batch.sessionID, message.CreateMessageParams{
+				Role:             msg.Role,
+				Parts:            parts,
+				Model:            msg.Model,
+				Provider:         msg.Provider,
+				IsSummaryMessage: msg.IsSummaryMessage,
+			}); err != nil {
+				return util.ReportError(err)()
+			}
+		}
+		return m.loadSession(batch.sessionID)()
+	}
+}
+
+// handleCompact implements the /compact command
+func (m *UI) handleCompact() tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session")
+	}
+
+	if m.isAgentBusy() {
+		return util.ReportWarn("Agent is busy, please wait...")
+	}
+
+	m.undoStack = nil
+
+	return func() tea.Msg {
+		if err := m.com.App.AgentCoordinator.Summarize(context.Background(), m.session.ID); err != nil {
+			return util.ReportError(err)()
+		}
+		return util.NewInfoMsg("Session compacted")
+	}
+}
+
+// handleShare implements the /share command
+func (m *UI) handleShare() tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session")
+	}
+
+	hub := m.com.App.CollabHub()
+	if hub == nil {
+		return util.ReportWarn("Collaboration is unavailable")
+	}
+
+	room := hub.GetOrCreateRoom(m.session.ID)
+	shareURL := collab.ShareURL(m.com.Config().Options.CollabShareURL, room.ID)
+
+	return func() tea.Msg {
+		if err := m.com.App.Sessions.SetShared(context.Background(), m.session.ID, true); err != nil {
+			return util.ReportError(err)()
+		}
+		m.copyTextToClipboard(shareURL)
+		return util.NewInfoMsg("Session shared! Room URL: " + shareURL)
+	}
+}
+
+// handleUnshare implements the /unshare command
+func (m *UI) handleUnshare() tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session")
+	}
+
+	hub := m.com.App.CollabHub()
+	if hub == nil {
+		return util.ReportWarn("Collaboration is unavailable")
+	}
+	return func() tea.Msg {
+		if err := m.com.App.Sessions.SetShared(context.Background(), m.session.ID, false); err != nil {
+			return util.ReportError(err)()
+		}
+		hub.DeleteRoom(m.session.ID)
+		return util.NewInfoMsg("Session unshared")
+	}
+}
+
+// handleExport implements the /export command
+func (m *UI) handleExport() tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session")
+	}
+
+	return func() tea.Msg {
+		// Export session to markdown
+		content := m.exportSessionToMarkdown()
+
+		// Create temp file
+		tmpFile, err := os.CreateTemp("", "ghost-export-*.md")
+		if err != nil {
+			return util.ReportWarn("Export failed: " + err.Error())
+		}
+		defer tmpFile.Close()
+
+		if _, err := tmpFile.WriteString(content); err != nil {
+			return util.ReportWarn("Export failed: " + err.Error())
+		}
+
+		// Open in editor
+		editorCmd := exec.Command(os.Getenv("EDITOR"), tmpFile.Name())
+		if os.Getenv("EDITOR") == "" {
+			editorCmd = exec.Command("vi", tmpFile.Name())
+		}
+		editorCmd.Stdin = os.Stdin
+		editorCmd.Stdout = os.Stdout
+		editorCmd.Stderr = os.Stderr
+
+		if err := editorCmd.Run(); err != nil {
+			return util.ReportWarn("Editor error: " + err.Error())
+		}
+
+		return util.NewInfoMsg("Session exported to markdown")
+	}
+}
+
+// handleThinkingToggle implements the /thinking command
+func (m *UI) handleThinkingToggle() tea.Cmd {
+	m.showThinking = !m.showThinking
+
+	action := "shown"
+	if !m.showThinking {
+		action = "hidden"
+	}
+
+	return util.ReportInfo("Thinking blocks " + action)
+}
+
+// handleUsernameToggle toggles username display in chat
+func (m *UI) handleUsernameToggle() tea.Cmd {
+	m.showUsername = !m.showUsername
+
+	action := "shown"
+	if !m.showUsername {
+		action = "hidden"
+	}
+
+	return util.ReportInfo("Username " + action + " in chat messages")
+}
+
+// handleTerminalTitleToggle toggles terminal title updates
+func (m *UI) handleTerminalTitleToggle() tea.Cmd {
+	current := m.com.Config().Options.TUI.ShowTerminalTitle
+	newVal := current == nil || *current
+	newVal = !newVal
+
+	// Update config
+	if m.com.Config().Options.TUI.ShowTerminalTitle == nil {
+		m.com.Config().Options.TUI.ShowTerminalTitle = new(bool)
+	}
+	*m.com.Config().Options.TUI.ShowTerminalTitle = newVal
+
+	if newVal {
+		m.updateTerminalTitle()
+		return util.ReportInfo("Terminal title enabled")
+	}
+
+	// Clear terminal title
+	fmt.Printf("\033]0;\007")
+	return util.ReportInfo("Terminal title disabled")
+}
+
+// handleForkSession creates a fork of the current session
+func (m *UI) handleForkSession(title string) tea.Cmd {
+	if !m.hasSession() {
+		return util.ReportWarn("No active session to fork")
+	}
+
+	// Generate default title if not provided
+	if title == "" {
+		title = m.session.Title + " (fork)"
+	}
+
+	return func() tea.Msg {
+		ctx := context.Background()
+
+		// Fork the session
+		newSession, err := m.com.App.Sessions.Fork(ctx, m.session.ID, title)
+		if err != nil {
+			return util.ReportWarn("Fork failed: " + err.Error())
+		}
+
+		// Load the new forked session
+		return loadSessionMsg{
+			session:   &newSession,
+			files:     m.sessionFiles,
+			readFiles: m.sessionFileReads,
+		}
+	}
+}
+
+// openConnectDialog opens the provider connection dialog
+func (m *UI) openConnectDialog() tea.Cmd {
+	// Open the model/provider configuration dialog
+	return m.openModelsDialog()
+}
+
+// copyTextToClipboard copies text to system clipboard
+func (m *UI) copyTextToClipboard(text string) {
+	// Use OSC 52 escape sequence for clipboard copy
+	fmt.Printf("\033]52;c;%s\007", text)
+}
+
+// updateTerminalTitle updates the terminal window title with current session info
+func (m *UI) updateTerminalTitle() {
+	// Check if terminal title updates are disabled via env var
+	if os.Getenv("GHOST_DISABLE_TERMINAL_TITLE") != "" {
+		return
+	}
+
+	// Check config option
+	if m.com.Config().Options.TUI.ShowTerminalTitle != nil && !*m.com.Config().Options.TUI.ShowTerminalTitle {
+		return
+	}
+
+	title := "Ghost"
+	if m.hasSession() && m.session != nil {
+		title = fmt.Sprintf("%s - Ghost", m.session.Title)
+	}
+
+	// Use OSC sequence to set terminal title
+	fmt.Printf("\033]0;%s\007", title)
+}
+
+// cycleModel cycles through recently used models
+func (m *UI) cycleModel(reverse bool) {
+	if len(m.recentModels) == 0 {
+		// Build recent models from config
+		m.recentModels = m.buildRecentModelsList()
+		if len(m.recentModels) == 0 {
+			return
+		}
+	}
+
+	if reverse {
+		m.currentModelIdx = (m.currentModelIdx - 1 + len(m.recentModels)) % len(m.recentModels)
+	} else {
+		m.currentModelIdx = (m.currentModelIdx + 1) % len(m.recentModels)
+	}
+
+	// Switch to the selected model
+	m.switchToModel(m.recentModels[m.currentModelIdx])
+}
+
+// buildRecentModelsList builds a list of recently used models from config
+func (m *UI) buildRecentModelsList() []string {
+	var models []string
+
+	// Add current large model first
+	if largeModel := m.com.Config().LargeModel(); largeModel != nil {
+		modelConfig, ok := m.com.Config().Models[config.SelectedModelTypeLarge]
+		if ok {
+			models = append(models, fmt.Sprintf("%s/%s", modelConfig.Provider, modelConfig.Model))
+		}
+	}
+
+	// Add small model if different
+	if smallModel := m.com.Config().SmallModel(); smallModel != nil {
+		modelConfig, ok := m.com.Config().Models[config.SelectedModelTypeSmall]
+		if ok {
+			smallModelStr := fmt.Sprintf("%s/%s", modelConfig.Provider, modelConfig.Model)
+			// Avoid duplicates
+			if len(models) == 0 || models[0] != smallModelStr {
+				models = append(models, smallModelStr)
+			}
+		}
+	}
+
+	// Add models from enabled providers
+	for _, provider := range m.com.Config().EnabledProviders() {
+		if len(provider.Models) == 0 {
+			continue
+		}
+		model := fmt.Sprintf("%s/%s", provider.ID, provider.Models[0].ID)
+		// Avoid duplicates
+		found := false
+		for _, m := range models {
+			if m == model {
+				found = true
+				break
+			}
+		}
+		if !found {
+			models = append(models, model)
+		}
+	}
+
+	return models
+}
+
+// switchToModel switches to the specified model
+func (m *UI) switchToModel(modelStr string) {
+	// Parse model string (format: "provider/model")
+	parts := strings.SplitN(modelStr, "/", 2)
+	if len(parts) != 2 {
+		return
+	}
+
+	provider := parts[0]
+	model := parts[1]
+
+	// Update config with new model
+	m.com.Config().Models[config.SelectedModelTypeLarge] = config.SelectedModel{
+		Model:    model,
+		Provider: provider,
+	}
+
+	// Show feedback to user
+	m.status.SetInfoMsg(util.NewInfoMsg(fmt.Sprintf("Switched to %s", modelStr)))
+}
+
+// exportSessionToMarkdown exports the current session to markdown format
+func (m *UI) exportSessionToMarkdown() string {
+	var sb strings.Builder
+
+	sb.WriteString("# Session: " + m.session.Title + "\n\n")
+	sb.WriteString("Date: " + time.Unix(m.session.CreatedAt, 0).Format("2006-01-02 15:04:05") + "\n\n")
+	sb.WriteString("---\n\n")
+
+	// Simple export - just note that full message export requires database access
+	sb.WriteString("Session ID: " + m.session.ID + "\n\n")
+	sb.WriteString("*Full message export requires database access*\n")
+
+	return sb.String()
+}
+
+// runCustomCommand executes a custom command
+func (m *UI) runCustomCommand(cmd commands.CustomCommand, args string) tea.Cmd {
+	content := cmd.Content
+	if args != "" {
+		// Replace $ARGUMENTS placeholder
+		content = strings.ReplaceAll(content, "$ARGUMENTS", args)
+	}
+
+	return m.sendMessage(content)
+}
+
+// runMCPPromptDialog opens dialog for MCP prompt with arguments
+func (m *UI) runMCPPromptDialog(prompt commands.MCPPrompt) tea.Cmd {
+	// For now, just run the MCP prompt directly
+	return func() tea.Msg {
+		// TODO: Implement MCP prompt dialog
+		return util.ReportWarn("MCP prompt execution coming soon")
+	}
+}
+
+// prepareRedoParts preserves assistant messages exactly and strips finish parts
+// from non-assistant messages so Create() can add the correct terminal finish.
+func prepareRedoParts(msg message.Message) []message.ContentPart {
+	if msg.Role == message.Assistant {
+		return append([]message.ContentPart(nil), msg.Parts...)
+	}
+
+	parts := make([]message.ContentPart, 0, len(msg.Parts))
+	for _, part := range msg.Parts {
+		if _, ok := part.(message.Finish); ok {
+			continue
+		}
+		parts = append(parts, part)
+	}
+	return parts
 }
 
 // renderLogo renders the Ghost logo with the given styles and dimensions.

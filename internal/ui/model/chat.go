@@ -904,3 +904,46 @@ func abs(x int) int {
 	}
 	return x
 }
+
+// RemoveLastUserMessage removes the last user message and its assistant response from the chat
+func (m *Chat) RemoveLastUserMessage() {
+	// Access items through the list
+	length := m.list.Len()
+	if length < 2 {
+		return
+	}
+
+	// Find the last user message by working backwards
+	for i := length - 1; i >= 0; i-- {
+		item := m.list.ItemAt(i)
+		if item == nil {
+			continue
+		}
+
+		if msg, ok := item.(chat.MessageItem); ok {
+			id := msg.ID()
+			if id == "user" || strings.HasPrefix(id, "user:") {
+				// Found user message, remove it and the next message (assistant response)
+				if i+1 < length {
+					// Remove both messages by rebuilding the list
+					var newItems []list.Item
+					for j := 0; j < length; j++ {
+						if j == i || j == i+1 {
+							continue
+						}
+						newItems = append(newItems, m.list.ItemAt(j))
+					}
+					m.list.SetItems(newItems...)
+				} else {
+					// User message is last, just remove it
+					var newItems []list.Item
+					for j := 0; j < length-1; j++ {
+						newItems = append(newItems, m.list.ItemAt(j))
+					}
+					m.list.SetItems(newItems...)
+				}
+				return
+			}
+		}
+	}
+}

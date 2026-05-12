@@ -14,6 +14,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/fantasy"
@@ -21,15 +22,21 @@ import (
 	"github.com/swadhinbiswas/ghost/internal/agent/notify"
 	"github.com/swadhinbiswas/ghost/internal/agent/prompt"
 	"github.com/swadhinbiswas/ghost/internal/agent/tools"
+	"github.com/swadhinbiswas/ghost/internal/collab"
 	"github.com/swadhinbiswas/ghost/internal/config"
+	"github.com/swadhinbiswas/ghost/internal/feedback"
 	"github.com/swadhinbiswas/ghost/internal/filetracker"
+	"github.com/swadhinbiswas/ghost/internal/filewatcher"
 	"github.com/swadhinbiswas/ghost/internal/history"
 	"github.com/swadhinbiswas/ghost/internal/log"
 	"github.com/swadhinbiswas/ghost/internal/lsp"
+	"github.com/swadhinbiswas/ghost/internal/memory"
 	"github.com/swadhinbiswas/ghost/internal/message"
 	"github.com/swadhinbiswas/ghost/internal/oauth/copilot"
 	"github.com/swadhinbiswas/ghost/internal/permission"
+	"github.com/swadhinbiswas/ghost/internal/plugin"
 	"github.com/swadhinbiswas/ghost/internal/pubsub"
+	"github.com/swadhinbiswas/ghost/internal/semantic"
 	"github.com/swadhinbiswas/ghost/internal/session"
 	"golang.org/x/sync/errgroup"
 
@@ -58,30 +65,46 @@ var (
 )
 
 type Coordinator interface {
-	// INFO: (kujtim) this is not used yet we will use this when we have multiple agents
-	// SetMainAgent(string)
 	Run(ctx context.Context, sessionID, prompt string, attachments ...message.Attachment) (*fantasy.AgentResult, error)
 	Cancel(sessionID string)
 	CancelAll()
+	SetPaneController(PaneController)
+	UpdateModels(ctx context.Context) error
 	IsSessionBusy(sessionID string) bool
 	IsBusy() bool
 	QueuedPrompts(sessionID string) int
 	QueuedPromptsList(sessionID string) []string
 	ClearQueue(sessionID string)
-	Summarize(context.Context, string) error
+	Summarize(ctx context.Context, sessionID string) error
 	Model() Model
-	UpdateModels(ctx context.Context) error
+	CollabHub() *collab.Hub
+}
+
+// PaneController is the interface for controlling the terminal multiplexer from the agent layer.
+type PaneController interface {
+	CreatePane(title, content string) string
+	UpdateContent(id, content string)
+	AppendContent(id, content string)
+	ClosePane(id string)
+	PaneCount() int
 }
 
 type coordinator struct {
-	cfg         *config.ConfigStore
-	sessions    session.Service
-	messages    message.Service
-	permissions permission.Service
-	history     history.Service
-	filetracker filetracker.Service
-	lspManager  *lsp.Manager
-	notify      pubsub.Publisher[notify.Notification]
+	cfg           *config.ConfigStore
+	sessions      session.Service
+	messages      message.Service
+	permissions   permission.Service
+	history       history.Service
+	filetracker   filetracker.Service
+	lspManager    *lsp.Manager
+	notify        pubsub.Publisher[notify.Notification]
+	filewatcher   *filewatcher.Watcher
+	semIndex      *semantic.Index
+	memExtractor  *memory.Extractor
+	pluginLoader  *plugin.Loader
+	feedbackStore *feedback.Store
+	collabHub     *collab.Hub
+	paneCtrl      PaneController
 
 	currentAgent SessionAgent
 	agents       map[string]SessionAgent
@@ -101,16 +124,33 @@ func NewCoordinator(
 	notify pubsub.Publisher[notify.Notification],
 ) (Coordinator, error) {
 	c := &coordinator{
-		cfg:         cfg,
-		sessions:    sessions,
-		messages:    messages,
-		permissions: permissions,
-		history:     history,
-		filetracker: filetracker,
-		lspManager:  lspManager,
-		notify:      notify,
-		agents:      make(map[string]SessionAgent),
+		cfg:           cfg,
+		sessions:      sessions,
+		messages:      messages,
+		permissions:   permissions,
+		history:       history,
+		filetracker:   filetracker,
+		lspManager:    lspManager,
+		notify:        notify,
+		agents:        make(map[string]SessionAgent),
+		filewatcher:   filewatcher.New(cfg.WorkingDir()),
+		semIndex:      semantic.NewIndex(cfg.WorkingDir()),
+		memExtractor:  memory.NewExtractor(),
+		pluginLoader:  plugin.NewLoader(cfg.WorkingDir()),
+		feedbackStore: initFeedbackStore(cfg.WorkingDir()),
+		collabHub:     collab.NewHub(),
 	}
+
+	// Start file watcher to detect external changes
+	if c.filewatcher != nil {
+		go c.watchExternalChanges(ctx)
+	}
+
+	// Build semantic index in background
+	go c.buildSemanticIndex(ctx)
+
+	// Load plugins in background
+	go c.loadPlugins()
 
 	agentCfg, ok := cfg.Config().Agents[config.AgentCoder]
 	if !ok {
@@ -118,18 +158,78 @@ func NewCoordinator(
 	}
 
 	// TODO: make this dynamic when we support multiple agents
-	prompt, err := coderPrompt(prompt.WithWorkingDir(c.cfg.WorkingDir()))
+	// Use plan prompt if plan mode is enabled
+	var sysPrompt *prompt.Prompt
+	var err error
+	if cfg.Config().Options.TUI != nil && cfg.Config().Options.TUI.PlanMode {
+		sysPrompt, err = planPrompt(prompt.WithWorkingDir(c.cfg.WorkingDir()))
+	} else {
+		sysPrompt, err = coderPrompt(prompt.WithWorkingDir(c.cfg.WorkingDir()))
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	agent, err := c.buildAgent(ctx, prompt, agentCfg, false)
+	agent, err := c.buildAgent(ctx, sysPrompt, agentCfg, false)
 	if err != nil {
 		return nil, err
 	}
 	c.currentAgent = agent
 	c.agents[config.AgentCoder] = agent
 	return c, nil
+}
+
+// watchExternalChanges starts the file watcher and handles external file change events.
+// When a file the agent has read is modified externally, it tracks the modification
+// so the agent can detect stale reads.
+func (c *coordinator) watchExternalChanges(ctx context.Context) {
+	if c.filewatcher == nil {
+		return
+	}
+
+	if err := c.filewatcher.Start(ctx); err != nil {
+		slog.Warn("Failed to start file watcher", "error", err)
+		return
+	}
+
+	slog.Info("External file watcher enabled for", "dir", c.cfg.WorkingDir())
+}
+
+// SetPaneController sets the multiplexer controller from the UI layer.
+func (c *coordinator) SetPaneController(ctrl PaneController) {
+	c.paneCtrl = ctrl
+}
+
+// CollabHub returns the collaboration WebSocket hub.
+func (c *coordinator) CollabHub() *collab.Hub {
+	return c.collabHub
+}
+
+// buildSemanticIndex builds the semantic search index in the background.
+func (c *coordinator) buildSemanticIndex(ctx context.Context) {
+	if c.semIndex == nil {
+		return
+	}
+
+	slog.Info("Building semantic index...", "dir", c.cfg.WorkingDir())
+	start := time.Now()
+	if err := c.semIndex.Build(ctx); err != nil {
+		slog.Warn("Failed to build semantic index", "error", err)
+		return
+	}
+	slog.Info("Semantic index built",
+		"chunks", c.semIndex.ChunkCount(),
+		"duration", time.Since(start).Round(time.Second),
+	)
+}
+
+// WasFileModifiedExternally checks if a file was modified externally after a given time.
+// Returns true if the file has been changed outside of the agent's control.
+func (c *coordinator) WasFileModifiedExternally(path string, since time.Time) bool {
+	if c.filewatcher == nil {
+		return false
+	}
+	return c.filewatcher.WasModifiedExternally(path, since)
 }
 
 // Run implements Coordinator.
@@ -189,6 +289,10 @@ func (c *coordinator) Run(ctx context.Context, sessionID string, prompt string, 
 		})
 	}
 	result, originalErr := run()
+
+	if originalErr == nil && result != nil {
+		go c.extractAndSaveMemories(ctx, sessionID, prompt, result)
+	}
 
 	if c.isUnauthorized(originalErr) {
 		switch {
@@ -403,6 +507,8 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		if err != nil {
 			return err
 		}
+		// Append self-healing instructions to enable automatic error recovery
+		systemPrompt += SelfHealingPrompt
 		result.SetSystemPrompt(systemPrompt)
 		return nil
 	})
@@ -445,23 +551,48 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 		}
 	}
 
+	// Register plugin tools
+	pluginTools := c.buildPluginTools()
+	allTools = append(allTools, pluginTools...)
+
 	allTools = append(allTools,
-		tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.Attribution, modelName),
-		tools.NewJobOutputTool(),
-		tools.NewJobKillTool(),
-		tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil),
-		tools.NewEditTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
-		tools.NewMultiEditTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
 		tools.NewFetchTool(c.permissions, c.cfg.WorkingDir(), nil),
 		tools.NewGlobTool(c.cfg.WorkingDir()),
 		tools.NewGrepTool(c.cfg.WorkingDir(), c.cfg.Config().Tools.Grep),
 		tools.NewLsTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Tools.Ls),
+		tools.NewSemanticSearchTool(c.semIndex, c.cfg.WorkingDir()),
 		tools.NewSourcegraphTool(nil),
-		tools.NewMemoryTool(c.cfg),
-		tools.NewTodosTool(c.sessions),
 		tools.NewViewTool(c.lspManager, c.permissions, c.filetracker, c.cfg.WorkingDir(), c.cfg.Config().Options.SkillsPaths...),
-		tools.NewWriteTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
+		tools.NewSymbolsTool(c.cfg.WorkingDir()),
 	)
+
+	// Plan mode: read-only tools only
+	planMode := c.cfg.Config().Options.TUI != nil && c.cfg.Config().Options.TUI.PlanMode
+	if !planMode {
+		allTools = append(allTools,
+			tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.Attribution, modelName),
+			tools.NewJobOutputTool(),
+			tools.NewJobKillTool(),
+			tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil),
+			tools.NewEditTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
+			tools.NewMultiEditTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
+			tools.NewAtomicEditTool(c.permissions, c.history, c.cfg.WorkingDir()),
+			tools.NewMemoryTool(c.cfg),
+			tools.NewTodosTool(c.sessions),
+			tools.NewWriteTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
+			tools.NewUndoTool(c.permissions, c.history, c.cfg.WorkingDir()),
+			tools.NewTestTool(c.permissions, c.cfg.WorkingDir()),
+			tools.NewScreenshotTool(c.cfg.WorkingDir()),
+			tools.NewSwarmTool(c.swarmRunner(), c.cfg.WorkingDir()),
+			tools.NewPluginTool(c.pluginLoader),
+			tools.NewFeedbackTool(c.feedbackStore),
+			tools.NewCollabTool(c.collabHub),
+			tools.NewMultiplexTool(func() tools.PaneManager { return c.paneCtrl }),
+		)
+	} else {
+		// In plan mode, add a system prompt prefix indicating read-only mode
+		slog.Info("Plan mode enabled: only read-only tools available")
+	}
 
 	// Add LSP tools if user has configured LSPs or auto_lsp is enabled (nil or true).
 	if len(c.cfg.Config().LSP) > 0 || c.cfg.Config().Options.AutoLSP == nil || *c.cfg.Config().Options.AutoLSP {
@@ -1041,4 +1172,158 @@ func (c *coordinator) updateParentSessionCost(ctx context.Context, childSessionI
 	}
 
 	return nil
+}
+
+// extractAndSaveMemories extracts memorable facts from the conversation and saves them.
+// This runs asynchronously after a successful agent run to enable cross-session learning.
+func (c *coordinator) extractAndSaveMemories(ctx context.Context, sessionID, userPrompt string, result *fantasy.AgentResult) {
+	if c.memExtractor == nil {
+		return
+	}
+
+	messages := c.getConversationMessages(ctx, sessionID)
+	if len(messages) == 0 {
+		return
+	}
+
+	facts := c.memExtractor.ExtractFromConversation(messages)
+
+	if len(result.Response.Content) > 0 {
+		responseFacts := memory.ExtractKeyFacts(result.Response.Content.Text())
+		facts = append(facts, responseFacts...)
+	}
+
+	if len(facts) == 0 {
+		return
+	}
+
+	memStore, err := memory.NewMemoryStore(c.cfg.WorkingDir())
+	if err != nil {
+		slog.Debug("Failed to init memory store for extraction", "error", err)
+		return
+	}
+
+	existing := memStore.GetAll()
+	saved := 0
+	for _, fact := range facts {
+		key := fact.Category + "_" + fact.Key
+		if _, exists := existing[key]; exists {
+			continue
+		}
+		value := fact.Value
+		if len(value) > 300 {
+			value = value[:300] + "..."
+		}
+		if err := memStore.Set(key, value); err != nil {
+			slog.Debug("Failed to save extracted memory", "key", key, "error", err)
+			continue
+		}
+		saved++
+	}
+
+	if saved > 0 {
+		slog.Info("Extracted and saved memories", "count", saved, "session", sessionID)
+	}
+}
+
+// getConversationMessages retrieves the conversation messages for memory extraction.
+func (c *coordinator) getConversationMessages(ctx context.Context, sessionID string) []memory.ConversationMessage {
+	msgs, err := c.messages.List(ctx, sessionID)
+	if err != nil {
+		return nil
+	}
+
+	var result []memory.ConversationMessage
+	for _, msg := range msgs {
+		role := string(msg.Role)
+		content := msg.Content().Text
+		if content != "" {
+			result = append(result, memory.ConversationMessage{
+				Role:    role,
+				Content: content,
+			})
+		}
+	}
+	return result
+}
+
+// swarmRunner returns a SubAgentRunner function for use by the swarm tool.
+func (c *coordinator) swarmRunner() tools.SubAgentRunner {
+	return func(ctx context.Context, params tools.SubAgentRunParams) (fantasy.ToolResponse, error) {
+		return c.runSubAgent(ctx, subAgentParams{
+			Agent:          c.currentAgent,
+			SessionID:      params.SessionID,
+			AgentMessageID: params.AgentMessageID,
+			ToolCallID:     params.ToolCallID,
+			Prompt:         params.Prompt,
+			SessionTitle:   params.SessionTitle,
+		})
+	}
+}
+
+// loadPlugins discovers and loads all plugins in the background.
+func (c *coordinator) loadPlugins() {
+	if c.pluginLoader == nil {
+		return
+	}
+
+	plugins, err := c.pluginLoader.LoadAll()
+	if err != nil {
+		slog.Warn("Failed to load plugins", "error", err)
+		return
+	}
+
+	if len(plugins) > 0 {
+		slog.Info("Plugins loaded", "count", len(plugins))
+		for _, p := range plugins {
+			slog.Info("Plugin", "name", p.Manifest.Name, "type", p.Manifest.Type, "version", p.Manifest.Version)
+		}
+	}
+}
+
+// initFeedbackStore initializes the feedback store, ignoring errors if the directory doesn't exist yet.
+func initFeedbackStore(workingDir string) *feedback.Store {
+	store, err := feedback.NewStore(workingDir)
+	if err != nil {
+		slog.Debug("Feedback store not available", "error", err)
+		return nil
+	}
+	return store
+}
+
+// buildPluginTools creates agent tools from loaded tool-type plugins.
+func (c *coordinator) buildPluginTools() []fantasy.AgentTool {
+	if c.pluginLoader == nil {
+		return nil
+	}
+
+	toolPlugins := c.pluginLoader.GetTools()
+	if len(toolPlugins) == 0 {
+		return nil
+	}
+
+	var tools []fantasy.AgentTool
+	for _, p := range toolPlugins {
+		if p.Manifest.ToolDef == nil {
+			continue
+		}
+
+		td := p.Manifest.ToolDef
+		tool := fantasy.NewAgentTool(
+			td.Name,
+			td.Description,
+			func(ctx context.Context, params map[string]interface{}, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+				input, _ := json.Marshal(params)
+				output, err := p.Runtime.Execute(ctx, string(input))
+				if err != nil {
+					return fantasy.ToolResponse{Content: output, IsError: true}, nil
+				}
+				return fantasy.NewTextResponse(output), nil
+			},
+		)
+		tools = append(tools, tool)
+		slog.Info("Plugin tool registered", "plugin", p.Manifest.Name, "tool", td.Name)
+	}
+
+	return tools
 }

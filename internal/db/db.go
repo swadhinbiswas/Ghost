@@ -132,6 +132,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateSessionStmt, err = db.PrepareContext(ctx, updateSession); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateSession: %w", err)
 	}
+	if q.updateSessionSharedStmt, err = db.PrepareContext(ctx, updateSessionShared); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSessionShared: %w", err)
+	}
 	if q.updateSessionTitleAndUsageStmt, err = db.PrepareContext(ctx, updateSessionTitleAndUsage); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateSessionTitleAndUsage: %w", err)
 	}
@@ -320,6 +323,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateSessionStmt: %w", cerr)
 		}
 	}
+	if q.updateSessionSharedStmt != nil {
+		if cerr := q.updateSessionSharedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSessionSharedStmt: %w", cerr)
+		}
+	}
 	if q.updateSessionTitleAndUsageStmt != nil {
 		if cerr := q.updateSessionTitleAndUsageStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateSessionTitleAndUsageStmt: %w", cerr)
@@ -400,6 +408,7 @@ type Queries struct {
 	renameSessionStmt              *sql.Stmt
 	updateMessageStmt              *sql.Stmt
 	updateSessionStmt              *sql.Stmt
+	updateSessionSharedStmt        *sql.Stmt
 	updateSessionTitleAndUsageStmt *sql.Stmt
 }
 
@@ -443,6 +452,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		renameSessionStmt:              q.renameSessionStmt,
 		updateMessageStmt:              q.updateMessageStmt,
 		updateSessionStmt:              q.updateSessionStmt,
+		updateSessionSharedStmt:        q.updateSessionSharedStmt,
 		updateSessionTitleAndUsageStmt: q.updateSessionTitleAndUsageStmt,
 	}
 }

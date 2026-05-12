@@ -54,6 +54,7 @@ type Session struct {
 	PromptTokens     int64
 	CompletionTokens int64
 	SummaryMessageID string
+	Shared           bool
 	Cost             float64
 	Todos            []Todo
 	CreatedAt        int64
@@ -65,11 +66,13 @@ type Service interface {
 	Create(ctx context.Context, title string) (Session, error)
 	CreateTitleSession(ctx context.Context, parentSessionID string) (Session, error)
 	CreateTaskSession(ctx context.Context, toolCallID, parentSessionID, title string) (Session, error)
+	Fork(ctx context.Context, parentSessionID, title string) (Session, error)
 	Get(ctx context.Context, id string) (Session, error)
 	GetLast(ctx context.Context) (Session, error)
 	List(ctx context.Context) ([]Session, error)
 	Save(ctx context.Context, session Session) (Session, error)
 	UpdateTitleAndUsage(ctx context.Context, sessionID, title string, promptTokens, completionTokens int64, cost float64) error
+	SetShared(ctx context.Context, sessionID string, shared bool) error
 	Rename(ctx context.Context, id string, title string) error
 	Delete(ctx context.Context, id string) error
 
@@ -124,6 +127,25 @@ func (s *service) CreateTitleSession(ctx context.Context, parentSessionID string
 	}
 	session := s.fromDBItem(dbSession)
 	s.Publish(pubsub.CreatedEvent, session)
+	return session, nil
+}
+
+// Fork creates a new session that branches from an existing session
+func (s *service) Fork(ctx context.Context, parentSessionID, title string) (Session, error) {
+	// Create new forked session
+	dbSession, err := s.q.CreateSession(ctx, db.CreateSessionParams{
+		ID:              uuid.New().String(),
+		ParentSessionID: sql.NullString{String: parentSessionID, Valid: true},
+		Title:           title,
+	})
+	if err != nil {
+		return Session{}, err
+	}
+
+	session := s.fromDBItem(dbSession)
+	s.Publish(pubsub.CreatedEvent, session)
+	event.SessionCreated()
+
 	return session, nil
 }
 
@@ -195,6 +217,7 @@ func (s *service) Save(ctx context.Context, session Session) (Session, error) {
 			String: todosJSON,
 			Valid:  todosJSON != "",
 		},
+		Shared: boolToInt64(session.Shared),
 	})
 	if err != nil {
 		return Session{}, err
@@ -202,6 +225,19 @@ func (s *service) Save(ctx context.Context, session Session) (Session, error) {
 	session = s.fromDBItem(dbSession)
 	s.Publish(pubsub.UpdatedEvent, session)
 	return session, nil
+}
+
+// SetShared updates whether the session is shared.
+func (s *service) SetShared(ctx context.Context, sessionID string, shared bool) error {
+	updated, err := s.q.UpdateSessionShared(ctx, db.UpdateSessionSharedParams{
+		Shared: boolToInt64(shared),
+		ID:     sessionID,
+	})
+	if err != nil {
+		return err
+	}
+	s.Publish(pubsub.UpdatedEvent, s.fromDBItem(updated))
+	return nil
 }
 
 // UpdateTitleAndUsage updates only the title and usage fields atomically.
@@ -250,11 +286,19 @@ func (s service) fromDBItem(item db.Session) Session {
 		PromptTokens:     item.PromptTokens,
 		CompletionTokens: item.CompletionTokens,
 		SummaryMessageID: item.SummaryMessageID.String,
+		Shared:           item.Shared != 0,
 		Cost:             item.Cost,
 		Todos:            todos,
 		CreatedAt:        item.CreatedAt,
 		UpdatedAt:        item.UpdatedAt,
 	}
+}
+
+func boolToInt64(v bool) int64 {
+	if v {
+		return 1
+	}
+	return 0
 }
 
 func marshalTodos(todos []Todo) (string, error) {

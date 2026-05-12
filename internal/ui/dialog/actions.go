@@ -57,7 +57,8 @@ type (
 	ActionSetTheme                    struct {
 		Theme string
 	}
-	ActionSummarize struct {
+	ActionTogglePlanMode struct{}
+	ActionSummarize      struct {
 		SessionID string
 	}
 	// ActionSelectReasoningEffort is a message indicating a reasoning effort

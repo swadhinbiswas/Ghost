@@ -19,6 +19,7 @@ INSERT INTO sessions (
     prompt_tokens,
     completion_tokens,
     cost,
+    shared,
     summary_message_id,
     updated_at,
     created_at
@@ -30,10 +31,11 @@ INSERT INTO sessions (
     ?,
     ?,
     ?,
+    0,
     null,
     strftime('%s', 'now'),
     strftime('%s', 'now')
-) RETURNING id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id, todos
+) RETURNING id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, shared, updated_at, created_at, summary_message_id, todos
 `
 
 type CreateSessionParams struct {
@@ -65,6 +67,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.PromptTokens,
 		&i.CompletionTokens,
 		&i.Cost,
+		&i.Shared,
 		&i.UpdatedAt,
 		&i.CreatedAt,
 		&i.SummaryMessageID,
@@ -84,7 +87,7 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 }
 
 const getLastSession = `-- name: GetLastSession :one
-SELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id, todos
+SELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, shared, updated_at, created_at, summary_message_id, todos
 FROM sessions
 ORDER BY updated_at DESC
 LIMIT 1
@@ -101,6 +104,7 @@ func (q *Queries) GetLastSession(ctx context.Context) (Session, error) {
 		&i.PromptTokens,
 		&i.CompletionTokens,
 		&i.Cost,
+		&i.Shared,
 		&i.UpdatedAt,
 		&i.CreatedAt,
 		&i.SummaryMessageID,
@@ -110,7 +114,7 @@ func (q *Queries) GetLastSession(ctx context.Context) (Session, error) {
 }
 
 const getSessionByID = `-- name: GetSessionByID :one
-SELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id, todos
+SELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, shared, updated_at, created_at, summary_message_id, todos
 FROM sessions
 WHERE id = ? LIMIT 1
 `
@@ -126,6 +130,7 @@ func (q *Queries) GetSessionByID(ctx context.Context, id string) (Session, error
 		&i.PromptTokens,
 		&i.CompletionTokens,
 		&i.Cost,
+		&i.Shared,
 		&i.UpdatedAt,
 		&i.CreatedAt,
 		&i.SummaryMessageID,
@@ -135,7 +140,7 @@ func (q *Queries) GetSessionByID(ctx context.Context, id string) (Session, error
 }
 
 const listSessions = `-- name: ListSessions :many
-SELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id, todos
+SELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, shared, updated_at, created_at, summary_message_id, todos
 FROM sessions
 WHERE parent_session_id is NULL
 ORDER BY updated_at DESC
@@ -158,6 +163,7 @@ func (q *Queries) ListSessions(ctx context.Context) ([]Session, error) {
 			&i.PromptTokens,
 			&i.CompletionTokens,
 			&i.Cost,
+			&i.Shared,
 			&i.UpdatedAt,
 			&i.CreatedAt,
 			&i.SummaryMessageID,
@@ -201,9 +207,10 @@ SET
     completion_tokens = ?,
     summary_message_id = ?,
     cost = ?,
-    todos = ?
+    todos = ?,
+    shared = ?
 WHERE id = ?
-RETURNING id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id, todos
+RETURNING id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, shared, updated_at, created_at, summary_message_id, todos
 `
 
 type UpdateSessionParams struct {
@@ -213,6 +220,7 @@ type UpdateSessionParams struct {
 	SummaryMessageID sql.NullString
 	Cost             float64
 	Todos            sql.NullString
+	Shared           int64
 	ID               string
 }
 
@@ -224,6 +232,7 @@ func (q *Queries) UpdateSession(ctx context.Context, arg UpdateSessionParams) (S
 		arg.SummaryMessageID,
 		arg.Cost,
 		arg.Todos,
+		arg.Shared,
 		arg.ID,
 	)
 	var i Session
@@ -235,6 +244,43 @@ func (q *Queries) UpdateSession(ctx context.Context, arg UpdateSessionParams) (S
 		&i.PromptTokens,
 		&i.CompletionTokens,
 		&i.Cost,
+		&i.Shared,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.SummaryMessageID,
+		&i.Todos,
+	)
+	return i, err
+}
+
+const updateSessionShared = `-- name: UpdateSessionShared :one
+UPDATE sessions
+SET
+    shared = ?
+WHERE id = ?
+RETURNING id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, shared, updated_at, created_at, summary_message_id, todos
+`
+
+type UpdateSessionSharedParams struct {
+	Shared int64
+	ID     string
+}
+
+func (q *Queries) UpdateSessionShared(ctx context.Context, arg UpdateSessionSharedParams) (Session, error) {
+	row := q.queryRow(ctx, q.updateSessionSharedStmt, updateSessionShared,
+		arg.Shared,
+		arg.ID,
+	)
+	var i Session
+	err := row.Scan(
+		&i.ID,
+		&i.ParentSessionID,
+		&i.Title,
+		&i.MessageCount,
+		&i.PromptTokens,
+		&i.CompletionTokens,
+		&i.Cost,
+		&i.Shared,
 		&i.UpdatedAt,
 		&i.CreatedAt,
 		&i.SummaryMessageID,

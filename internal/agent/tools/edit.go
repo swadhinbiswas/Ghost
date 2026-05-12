@@ -176,8 +176,11 @@ func createNewFile(edit editContext, filePath, content string, call fantasy.Tool
 
 	edit.filetracker.RecordRead(edit.ctx, sessionID, filePath)
 
+	diffSummary := fmt.Sprintf("+%d added, -%d removed", additions, removals)
+	diffPreview := diff.GenerateDiffPreview("", content, 10)
+
 	return fantasy.WithResponseMetadata(
-		fantasy.NewTextResponse("File created: "+filePath),
+		fantasy.NewTextResponse(fmt.Sprintf("File created: %s\n\nDiff:\n%s\n\n(%s)", filePath, diffPreview, diffSummary)),
 		EditResponseMetadata{
 			OldContent: "",
 			NewContent: content,
@@ -307,8 +310,11 @@ func deleteContent(edit editContext, filePath, oldString string, replaceAll bool
 
 	edit.filetracker.RecordRead(edit.ctx, sessionID, filePath)
 
+	diffSummary := fmt.Sprintf("+%d added, -%d removed", additions, removals)
+	diffPreview := diff.GenerateDiffPreview(oldContent, newContent, 10)
+
 	return fantasy.WithResponseMetadata(
-		fantasy.NewTextResponse("Content deleted from file: "+filePath),
+		fantasy.NewTextResponse(fmt.Sprintf("Content deleted from file: %s\n\nDiff:\n%s\n\n(%s)", filePath, diffPreview, diffSummary)),
 		EditResponseMetadata{
 			OldContent: oldContent,
 			NewContent: newContent,
@@ -438,8 +444,11 @@ func replaceContent(edit editContext, filePath, oldString, newString string, rep
 
 	edit.filetracker.RecordRead(edit.ctx, sessionID, filePath)
 
+	diffSummary := fmt.Sprintf("+%d added, -%d removed", additions, removals)
+	diffPreview := diff.GenerateDiffPreview(oldContent, newContent, 10)
+
 	return fantasy.WithResponseMetadata(
-		fantasy.NewTextResponse("Content replaced in file: "+filePath),
+		fantasy.NewTextResponse(fmt.Sprintf("Content replaced in file: %s\n\nDiff:\n%s\n\n(%s)", filePath, diffPreview, diffSummary)),
 		EditResponseMetadata{
 			OldContent: oldContent,
 			NewContent: newContent,
