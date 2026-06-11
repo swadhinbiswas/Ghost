@@ -117,6 +117,35 @@ const stats = [
     </div>
   </section>
 
+  <!-- ============================ SCREENSHOTS ============================ -->
+  <section class="section-pad screenshots">
+    <div class="container">
+      <div class="section-head" data-reveal-group>
+        <span class="eyebrow" data-reveal>Screenshots</span>
+        <h2 data-reveal>See Ghost <span class="gradient-text">in action</span>.</h2>
+        <p class="sub" data-reveal>A live look at the TUI, theme switcher, and command interface.</p>
+      </div>
+      <div class="screenshot-grid" data-reveal-group>
+        <div class="screenshot-card" data-reveal>
+          <img src={`${base}/examples/ghostcode.png`} alt="Ghost code assistance in terminal" loading="lazy" />
+          <span class="cap">Code assistance &amp; generation</span>
+        </div>
+        <div class="screenshot-card" data-reveal>
+          <img src={`${base}/examples/theme.png`} alt="Ghost theme selector" loading="lazy" />
+          <span class="cap">Themeable TUI with live preview</span>
+        </div>
+        <div class="screenshot-card" data-reveal>
+          <img src={`${base}/examples/commands.png`} alt="Ghost command interface" loading="lazy" />
+          <span class="cap">Command mode &amp; shell integration</span>
+        </div>
+        <div class="screenshot-card" data-reveal>
+          <img src={`${base}/examples/image1.png`} alt="Ghost terminal interface" loading="lazy" />
+          <span class="cap">Full terminal interface</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============================ FEATURES ============================ -->
   <section id="features" class="section-pad">
     <div class="container">
@@ -307,6 +336,15 @@ swadhinbiswas/Ghost/main/install.sh | bash
     border: 1px solid var(--line); background: transparent; color: var(--fg-mute); cursor: pointer; transition: all .25s var(--ease); }
   .copy-btn:hover { color: var(--cyan); border-color: var(--line-strong); }
   .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  /* screenshots */
+  .screenshots { background: linear-gradient(180deg, transparent, rgba(40,38,58,.2), transparent); }
+  .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.4rem; }
+  .screenshot-card { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
+    background: linear-gradient(170deg, rgba(30,28,50,.8), rgba(12,11,22,.8)); transition: transform .3s var(--ease), border-color .3s var(--ease); }
+  .screenshot-card:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+  .screenshot-card img { width: 100%; display: block; }
+  .screenshot-card .cap { display: block; padding: .75rem 1rem; font-size: .82rem; color: var(--fg-mute); font-family: var(--font-mono); text-align: center; }
 
   /* cta */
   .cta-sec { padding: 4rem 0 7rem; }

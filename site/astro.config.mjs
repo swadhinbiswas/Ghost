@@ -1,14 +1,14 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-// Local dev (and custom-domain deploys) serve at the root '/'.
-// The GitHub Pages *project* site lives under '/Ghost', so the deploy workflow
-// sets DEPLOY_TARGET=pages to build with that base. This keeps
-// http://localhost:4321/ clean while production assets resolve correctly.
-const isPages = process.env.DEPLOY_TARGET === 'pages';
+// GitHub Pages deploys under '/Ghost', Cloudflare Pages at root '/'.
+const deploy = process.env.DEPLOY_TARGET;
+const base = deploy === 'pages' ? '/Ghost' : '/';
 
 export default defineConfig({
-  site: 'https://swadhinbiswas.github.io',
-  base: isPages ? '/Ghost' : '/',
+  site: deploy === 'pages'
+    ? 'https://swadhinbiswas.github.io'
+    : 'https://ghostcli.pages.dev',
+  base,
   trailingSlash: 'ignore',
 });

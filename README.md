@@ -12,6 +12,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-bd93f9.svg?style=flat-square&logo=opensourceinitiative)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.26-00ADD8?style=flat-square&logo=go)](https://golang.org/)
 
+<br>
+
+<img src="https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/examples/fullscreen.png" width="700" alt="Ghost terminal screenshots">
+
 </div>
 
 ---
@@ -136,3 +140,14 @@ On startup, Ghost refreshes the OpenCode Zen and Nvidia NIM model lists in the b
 ## 📄 License
 
 Ghost is open-source software licensed under the [MIT License](LICENSE). Fork it, mod it, make it your own.
+
+<br>
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/examples/ghostcode.png" width="380" alt="Ghost code assistance">&nbsp;
+  <img src="https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/examples/theme.png" width="380" alt="Ghost theme selector">&nbsp;
+  <img src="https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/examples/commands.png" width="380" alt="Ghost commands">&nbsp;
+  <img src="https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/examples/image1.png" width="380" alt="Ghost interface">
+</p>

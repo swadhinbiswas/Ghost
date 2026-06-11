@@ -1,0 +1,8 @@
+# Cloudflare Pages configuration for Ghost site
+name = "ghost-site"
+pages_build_output_dir = "./dist"
+
+[env.production]
+# Set via Cloudflare Dashboard or CI secrets:
+# CLOUDFLARE_API_TOKEN
+# CLOUDFLARE_ACCOUNT_ID
