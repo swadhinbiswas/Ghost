@@ -1,0 +1,16 @@
+# Code owners for Ghost.
+# These owners are automatically requested for review on pull requests.
+# See: https://docs.github.com/articles/about-code-owners
+
+# Default owner for everything in the repo.
+*                       @swadhinbiswas
+
+# Release & CI surface — extra scrutiny.
+/.github/               @swadhinbiswas
+/.goreleaser.yaml       @swadhinbiswas
+/go.mod                 @swadhinbiswas
+/go.sum                 @swadhinbiswas
+
+# Provider / model configuration.
+/internal/config/       @swadhinbiswas
+/nvidia_nim_models.json @swadhinbiswas
