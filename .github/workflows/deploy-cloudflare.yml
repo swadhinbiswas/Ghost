@@ -39,5 +39,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=ghost-site --branch=main
           workingDirectory: site
+          command: pages deploy dist --project-name=ghost-site --branch=main
