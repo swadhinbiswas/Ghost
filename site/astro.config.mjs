@@ -1,11 +1,14 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-// https://astro.build/config
-// Served at the site root (http://localhost:4321/). For a GitHub Pages
-// *project* site, deploy behind a custom domain or the user/org pages repo so
-// the root path is preserved.
+// Local dev (and custom-domain deploys) serve at the root '/'.
+// The GitHub Pages *project* site lives under '/Ghost', so the deploy workflow
+// sets DEPLOY_TARGET=pages to build with that base. This keeps
+// http://localhost:4321/ clean while production assets resolve correctly.
+const isPages = process.env.DEPLOY_TARGET === 'pages';
+
 export default defineConfig({
-  site: 'https://ghost-cli.dev',
+  site: 'https://swadhinbiswas.github.io',
+  base: isPages ? '/Ghost' : '/',
   trailingSlash: 'ignore',
 });
