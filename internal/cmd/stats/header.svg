@@ -1,139 +1,291 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380" fill="none" role="img" aria-label="Ghost — a beautiful, free AI assistant for your terminal">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" fill="none" role="img" aria-label="Ghost — a beautiful, free AI assistant for your terminal">
   <title>Ghost CLI</title>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#15131f"/>
-      <stop offset="0.45" stop-color="#100e1a"/>
-      <stop offset="1" stop-color="#0a0910"/>
-    </linearGradient>
-    <radialGradient id="glowP" cx="0.18" cy="0.12" r="0.7">
-      <stop offset="0" stop-color="#bd93f9" stop-opacity="0.45"/>
-      <stop offset="0.5" stop-color="#bd93f9" stop-opacity="0.08"/>
+    <!-- deep void background -->
+    <radialGradient id="void" cx="0.5" cy="0.45" r="0.85">
+      <stop offset="0" stop-color="#1a1530"/>
+      <stop offset="0.5" stop-color="#0f0c1e"/>
+      <stop offset="1" stop-color="#06050d"/>
+    </radialGradient>
+    <!-- purple glow -->
+    <radialGradient id="purpleGlow" cx="0.15" cy="0.15" r="0.7">
+      <stop offset="0" stop-color="#bd93f9" stop-opacity="0.5"/>
+      <stop offset="0.4" stop-color="#bd93f9" stop-opacity="0.1"/>
       <stop offset="1" stop-color="#bd93f9" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowK" cx="0.88" cy="0.82" r="0.65">
-      <stop offset="0" stop-color="#ff79c6" stop-opacity="0.35"/>
-      <stop offset="0.5" stop-color="#ff79c6" stop-opacity="0.06"/>
+    <!-- pink glow -->
+    <radialGradient id="pinkGlow" cx="0.88" cy="0.8" r="0.6">
+      <stop offset="0" stop-color="#ff79c6" stop-opacity="0.4"/>
+      <stop offset="0.4" stop-color="#ff79c6" stop-opacity="0.08"/>
       <stop offset="1" stop-color="#ff79c6" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0.3">
-      <stop offset="0" stop-color="#f0e6ff"/>
-      <stop offset="0.35" stop-color="#d0b9ff"/>
-      <stop offset="0.7" stop-color="#ff79c6"/>
+    <!-- hollow wordmark gradient -->
+    <linearGradient id="hollow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.3" stop-color="#e9d9ff"/>
+      <stop offset="0.6" stop-color="#bd93f9"/>
+      <stop offset="0.8" stop-color="#ff79c6"/>
       <stop offset="1" stop-color="#ffb86c"/>
     </linearGradient>
+    <!-- ghost skin -->
     <linearGradient id="skin" x1="0" y1="0" x2="0.3" y2="1">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="0.4" stop-color="#f3edff"/>
-      <stop offset="0.8" stop-color="#d4befa"/>
-      <stop offset="1" stop-color="#b896f0"/>
+      <stop offset="0.35" stop-color="#f5f0ff"/>
+      <stop offset="0.7" stop-color="#dac8fa"/>
+      <stop offset="1" stop-color="#bd93f9"/>
     </linearGradient>
+    <!-- ghost aura -->
     <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#bd93f9" stop-opacity="0.55"/>
-      <stop offset="0.4" stop-color="#ff79c6" stop-opacity="0.2"/>
-      <stop offset="0.8" stop-color="#bd93f9" stop-opacity="0.05"/>
+      <stop offset="0" stop-color="#bd93f9" stop-opacity="0.6"/>
+      <stop offset="0.3" stop-color="#ff79c6" stop-opacity="0.25"/>
+      <stop offset="0.7" stop-color="#bd93f9" stop-opacity="0.05"/>
       <stop offset="1" stop-color="#bd93f9" stop-opacity="0"/>
     </radialGradient>
-    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8"/>
+    <!-- fog mist -->
+    <radialGradient id="mist1" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#bd93f9" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#bd93f9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mist2" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff79c6" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ff79c6" stop-opacity="0"/>
+    </radialGradient>
+    <!-- ember gradient -->
+    <radialGradient id="ember" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb86c" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#ff79c6" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#ff79c6" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- filters -->
+    <filter id="blurLg" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="12"/>
     </filter>
-    <filter id="softSmall" x="-50%" y="-50%" width="200%" height="200%">
+    <filter id="blurMd" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="blurSm" x="-40%" y="-40%" width="180%" height="180%">
       <feGaussianBlur stdDeviation="3"/>
     </filter>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="textGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#bd93f9" flood-opacity="0.5"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
     <style>
-      @keyframes float { 0%,100%{ transform: translateY(0) rotate(-1deg);} 50%{ transform: translateY(-16px) rotate(1deg);} }
-      @keyframes pulse { 0%,100%{ opacity:.45; transform: scale(1);} 50%{ opacity:.9; transform: scale(1.06);} }
-      @keyframes blink { 0%,90%,100%{ transform: scaleY(1);} 95%{ transform: scaleY(.12);} }
-      @keyframes tw { 0%,100%{ opacity:.2;} 50%{ opacity:.9;} }
+      /* ghost floating animation */
+      @keyframes float {
+        0%,100%{ transform: translateY(0) rotate(-1.5deg) scale(1); }
+        25%{ transform: translateY(-18px) rotate(0.5deg) scale(1.02); }
+        50%{ transform: translateY(-8px) rotate(1.5deg) scale(1); }
+        75%{ transform: translateY(-22px) rotate(-0.5deg) scale(1.01); }
+      }
+      /* breathing aura */
+      @keyframes breathe {
+        0%,100%{ opacity:0.4; transform: scale(1); }
+        50%{ opacity:0.85; transform: scale(1.1); }
+      }
+      /* eye blink — slow and eerie */
+      @keyframes blink {
+        0%,88%,100%{ transform: scaleY(1); }
+        93%{ transform: scaleY(0.08); }
+      }
+      /* twinkle stars */
+      @keyframes tw1 { 0%,100%{ opacity:0.1; } 50%{ opacity:1; } }
+      @keyframes tw2 { 0%,100%{ opacity:0.15; } 50%{ opacity:0.85; } }
+      @keyframes tw3 { 0%,100%{ opacity:0.2; } 50%{ opacity:0.9; } }
+      /* underline draw */
       @keyframes dash { to { stroke-dashoffset: 0; } }
-      @keyframes fadeUp { 0%{ opacity:0; transform: translateY(8px);} 100%{ opacity:1; transform: translateY(0);} }
-      .ghost { transform-box: fill-box; transform-origin: center; animation: float 5s ease-in-out infinite; }
-      .aura  { transform-box: fill-box; transform-origin: center; animation: pulse 4.5s ease-in-out infinite; }
-      .eyes  { transform-box: fill-box; transform-origin: center; animation: blink 7s infinite; }
-      .s1 { animation: tw 3s ease-in-out infinite; }
-      .s2 { animation: tw 2.6s ease-in-out infinite .5s; }
-      .s3 { animation: tw 3.6s ease-in-out infinite 1s; }
-      .s4 { animation: tw 2.4s ease-in-out infinite .8s; }
-      .s5 { animation: tw 3.2s ease-in-out infinite .3s; }
-      .underline { stroke-dasharray: 540; stroke-dashoffset: 540; animation: dash 1.8s ease-out .4s forwards; }
-      .tagline { animation: fadeUp .8s ease-out .6s both; }
-      .pills { animation: fadeUp .8s ease-out 1s both; }
+      /* staggered fade-up */
+      @keyframes fadeUp { 0%{ opacity:0; transform: translateY(12px); } 100%{ opacity:1; transform: translateY(0); } }
+      /* mist drift */
+      @keyframes drift {
+        0%{ transform: translateX(-10%) scale(1); opacity:0.4; }
+        50%{ transform: translateX(5%) scale(1.3); opacity:0.7; }
+        100%{ transform: translateX(-10%) scale(1); opacity:0.4; }
+      }
+      @keyframes drift2 {
+        0%{ transform: translateX(5%) scale(1); opacity:0.3; }
+        50%{ transform: translateX(-8%) scale(1.4); opacity:0.6; }
+        100%{ transform: translateX(5%) scale(1); opacity:0.3; }
+      }
+      /* ember float */
+      @keyframes ember1 { 0%{ transform: translate(0,0) scale(1); opacity:0; } 20%{ opacity:0.8; } 80%{ opacity:0.3; } 100%{ transform: translate(20px,-80px) scale(0.3); opacity:0; } }
+      @keyframes ember2 { 0%{ transform: translate(0,0) scale(1); opacity:0; } 25%{ opacity:0.7; } 85%{ opacity:0.2; } 100%{ transform: translate(-30px,-100px) scale(0.4); opacity:0; } }
+      @keyframes ember3 { 0%{ transform: translate(0,0) scale(1); opacity:0; } 15%{ opacity:0.9; } 75%{ opacity:0.4; } 100%{ transform: translate(10px,-70px) scale(0.2); opacity:0; } }
+      /* text hollow pulse */
+      @keyframes textPulse {
+        0%,100%{ opacity:0.35; }
+        50%{ opacity:0.7; }
+      }
+      /* crescent wobble */
+      @keyframes wobble {
+        0%,100%{ transform: rotate(-8deg); }
+        50%{ transform: rotate(2deg); }
+      }
+
+      .ghost      { transform-box: fill-box; transform-origin: center; animation: float 6s ease-in-out infinite; }
+      .aura       { transform-box: fill-box; transform-origin: center; animation: breathe 5s ease-in-out infinite; }
+      .eyes       { transform-box: fill-box; transform-origin: center; animation: blink 8s infinite; }
+      .s1 { animation: tw1 2.8s ease-in-out infinite; }
+      .s2 { animation: tw2 3.4s ease-in-out infinite 0.6s; }
+      .s3 { animation: tw3 2.2s ease-in-out infinite 1.1s; }
+      .s4 { animation: tw1 3.8s ease-in-out infinite 0.3s; }
+      .s5 { animation: tw2 3s ease-in-out infinite 1.5s; }
+      .s6 { animation: tw3 2.6s ease-in-out infinite 0.9s; }
+      .underline  { stroke-dasharray: 600; stroke-dashoffset: 600; animation: dash 2s ease-out 0.5s forwards; }
+      .tagline    { animation: fadeUp 0.9s ease-out 0.8s both; }
+      .pills      { animation: fadeUp 0.9s ease-out 1.2s both; }
+      .mist1      { animation: drift 12s ease-in-out infinite; }
+      .mist2      { animation: drift2 15s ease-in-out infinite; }
+      .ember1     { animation: ember1 4s ease-out infinite; }
+      .ember2     { animation: ember2 5s ease-out infinite 1.5s; }
+      .ember3     { animation: ember3 3.5s ease-out infinite 2.8s; }
+      .glow-text  { animation: textPulse 3s ease-in-out infinite; }
+      .crescent   { transform-box: fill-box; transform-origin: center; animation: wobble 8s ease-in-out infinite; }
     </style>
   </defs>
 
-  <!-- background -->
-  <rect width="1200" height="380" rx="24" fill="url(#bg)"/>
-  <rect width="1200" height="380" rx="24" fill="url(#glowP)"/>
-  <rect width="1200" height="380" rx="24" fill="url(#glowK)"/>
-  <rect x="0.5" y="0.5" width="1199" height="379" rx="23.5" fill="none" stroke="#bd93f9" stroke-opacity="0.14" stroke-width="1"/>
+  <!-- deep void background -->
+  <rect width="1200" height="400" rx="24" fill="url(#void)"/>
+  <rect width="1200" height="400" rx="24" fill="url(#purpleGlow)"/>
+  <rect width="1200" height="400" rx="24" fill="url(#pinkGlow)"/>
 
-  <!-- twinkle stars -->
-  <g fill="#f8f8f2">
-    <circle class="s1" cx="540" cy="55" r="2"/>
-    <circle class="s2" cx="990" cy="50" r="1.8"/>
-    <circle class="s3" cx="1120" cy="130" r="2.2"/>
-    <circle class="s4" cx="720" cy="310" r="1.6"/>
-    <circle class="s2" cx="1060" cy="290" r="1.8"/>
-    <circle class="s1" cx="490" cy="260" r="1.5"/>
-    <circle class="s5" cx="880" cy="80" r="1.4"/>
-    <circle class="s3" cx="1140" cy="250" r="1.7"/>
-    <circle class="s4" cx="390" cy="100" r="1.6"/>
+  <!-- subtle noise overlay -->
+  <rect width="1200" height="400" rx="24" fill="none" stroke="#bd93f9" stroke-opacity="0.1" stroke-width="1.5"/>
+
+  <!-- drifting mist / fog -->
+  <g opacity="0.5">
+    <ellipse class="mist1" cx="200" cy="220" rx="180" ry="90" fill="url(#mist1)" filter="url(#blurLg)"/>
+    <ellipse class="mist2" cx="950" cy="180" rx="220" ry="110" fill="url(#mist2)" filter="url(#blurLg)"/>
+    <ellipse class="mist1" cx="600" cy="320" rx="300" ry="70" fill="url(#mist1)" filter="url(#blurLg)"/>
+    <ellipse class="mist2" cx="100" cy="100" rx="160" ry="80" fill="url(#mist2)" filter="url(#blurLg)"/>
   </g>
 
-  <!-- ghost mascot -->
-  <g transform="translate(165 195)">
-    <ellipse class="aura" cx="0" cy="0" rx="140" ry="140" fill="url(#aura)" filter="url(#soft)"/>
+  <!-- twinkle stars — scattered across the canvas -->
+  <g fill="#f8f8f2">
+    <circle class="s1" cx="80" cy="50" r="1.8"/>
+    <circle class="s2" cx="250" cy="80" r="1.4"/>
+    <circle class="s3" cx="420" cy="35" r="2"/>
+    <circle class="s4" cx="560" cy="55" r="1.6"/>
+    <circle class="s5" cx="680" cy="30" r="2.2"/>
+    <circle class="s6" cx="850" cy="50" r="1.5"/>
+    <circle class="s1" cx="1020" cy="70" r="1.8"/>
+    <circle class="s2" cx="1140" cy="45" r="2"/>
+    <circle class="s3" cx="150" cy="310" r="1.6"/>
+    <circle class="s4" cx="380" cy="340" r="1.4"/>
+    <circle class="s5" cx="780" cy="320" r="1.8"/>
+    <circle class="s6" cx="1050" cy="310" r="1.5"/>
+    <circle class="s1" cx="1130" cy="280" r="2.2"/>
+    <circle class="s2" cx="920" cy="360" r="1.4"/>
+    <circle class="s3" cx="200" cy="180" r="1.2"/>
+  </g>
+
+  <!-- floating embers (will-o'-wisps) -->
+  <g opacity="0.6">
+    <circle class="ember1" cx="480" cy="160" r="3" fill="url(#ember)" filter="url(#blurSm)"/>
+    <circle class="ember2" cx="700" cy="120" r="2.5" fill="url(#ember)" filter="url(#blurSm)"/>
+    <circle class="ember3" cx="580" cy="200" r="2" fill="url(#ember)" filter="url(#blurSm)"/>
+    <circle class="ember1" cx="350" cy="130" r="2.5" fill="url(#ember)" filter="url(#blurSm)"/>
+    <circle class="ember2" cx="820" cy="180" r="2" fill="url(#ember)" filter="url(#blurSm)"/>
+  </g>
+
+  <!-- ghost mascot — left side -->
+  <g transform="translate(185 210)">
+    <!-- aura -->
+    <ellipse class="aura" cx="0" cy="0" rx="150" ry="150" fill="url(#aura)" filter="url(#blurLg)"/>
+    <!-- secondary subtle aura -->
+    <ellipse cx="0" cy="0" rx="85" ry="85" fill="url(#aura)" filter="url(#blurMd)" opacity="0.5"/>
+
     <g class="ghost">
-      <!-- cute arms -->
-      <ellipse cx="-68" cy="24" rx="13" ry="19" transform="rotate(22 -68 24)" fill="url(#skin)"/>
-      <ellipse cx="68" cy="24" rx="13" ry="19" transform="rotate(-22 68 24)" fill="url(#skin)"/>
-      <!-- main body with scalloped hem -->
-      <path d="M-72 4 Q-72 -88 0 -88 Q72 -88 72 4 L72 76
-               Q72 93 58 93 Q44 93 40 81 Q36 93 24 93 Q12 93 8 81
-               Q4 93 -8 93 Q-20 93 -24 81 Q-28 93 -40 93 Q-52 93 -58 81
-               Q-64 93 -72 93 Q-80 93 -72 76 Z" fill="url(#skin)"/>
-      <!-- soft body highlight -->
-      <path d="M-2 -84 Q24 -84 48 -28 Q56 0 56 40 Q56 76 42 88 Q28 93 16 81 Q8 93 0 85 Q-8 93 -16 81 Q-28 93 -42 88 Q-56 76 -56 40 Q-56 0 -48 -28 Q-24 -84 -2 -84 Z" fill="#ffffff" fill-opacity="0.2"/>
-      <!-- rosy cheeks -->
-      <ellipse cx="-36" cy="16" rx="16" ry="10" fill="#ff8ed0" fill-opacity="0.75" filter="url(#softSmall)"/>
-      <ellipse cx="36" cy="16" rx="16" ry="10" fill="#ff8ed0" fill-opacity="0.75" filter="url(#softSmall)"/>
-      <!-- big sparkly eyes -->
+      <!-- arms -->
+      <ellipse cx="-72" cy="26" rx="14" ry="20" transform="rotate(24 -72 26)" fill="url(#skin)"/>
+      <ellipse cx="72" cy="26" rx="14" ry="20" transform="rotate(-24 72 26)" fill="url(#skin)"/>
+
+      <!-- main body -->
+      <path d="M-78 6 Q-78 -94 0 -94 Q78 -94 78 6 L78 82
+               Q78 100 62 100 Q46 100 42 86 Q38 100 24 100
+               Q10 100 6 86 Q2 100 -10 100 Q-24 100 -28 86
+               Q-32 100 -46 100 Q-60 100 -66 86
+               Q-72 100 -78 100 Q-86 100 -78 82 Z" fill="url(#skin)"/>
+
+      <!-- body highlight -->
+      <path d="M-2 -90 Q26 -90 52 -30 Q60 0 60 44 Q60 82 44 95 Q28 100 14 86 Q6 100 0 90 Q-6 100 -14 86 Q-28 100 -44 95 Q-60 82 -60 44 Q-60 0 -52 -30 Q-26 -90 -2 -90 Z" fill="#ffffff" fill-opacity="0.15"/>
+
+      <!-- rosy cheeks with glow -->
+      <ellipse cx="-38" cy="18" rx="17" ry="11" fill="#ff8ed0" fill-opacity="0.65" filter="url(#blurSm)"/>
+      <ellipse cx="38" cy="18" rx="17" ry="11" fill="#ff8ed0" fill-opacity="0.65" filter="url(#blurSm)"/>
+
+      <!-- eyes -->
       <g class="eyes">
-        <ellipse cx="-28" cy="-10" rx="15" ry="20" fill="#16121f"/>
-        <ellipse cx="28" cy="-10" rx="15" ry="20" fill="#16121f"/>
-        <!-- main eye shine -->
-        <circle cx="-23" cy="-18" r="6" fill="#ffffff"/>
-        <circle cx="33" cy="-18" r="6" fill="#ffffff"/>
-        <!-- secondary sparkle -->
-        <circle cx="-33" cy="-4" r="2.8" fill="#ffffff" fill-opacity="0.8"/>
-        <circle cx="23" cy="-4" r="2.8" fill="#ffffff" fill-opacity="0.8"/>
+        <!-- eye sockets -->
+        <ellipse cx="-30" cy="-10" rx="16" ry="21" fill="#0d0a18"/>
+        <ellipse cx="30" cy="-10" rx="16" ry="21" fill="#0d0a18"/>
+        <!-- main sparkle -->
+        <circle cx="-24" cy="-19" r="6.5" fill="#ffffff"/>
+        <circle cx="36" cy="-19" r="6.5" fill="#ffffff"/>
+        <!-- catchlight -->
+        <circle cx="-35" cy="-4" r="3" fill="#ffffff" fill-opacity="0.75"/>
+        <circle cx="25" cy="-4" r="3" fill="#ffffff" fill-opacity="0.75"/>
       </g>
-      <!-- happy smile -->
-      <path d="M-10 22 Q0 34 10 22 Q0 28 -10 22 Z" fill="#16121f"/>
-      <!-- tiny tongue -->
-      <path d="M-4 24 Q0 31 4 24 Z" fill="#ff8ed0" fill-opacity="0.6"/>
+
+      <!-- smile -->
+      <path d="M-12 24 Q0 38 12 24 Q0 32 -12 24 Z" fill="#0d0a18"/>
+      <!-- tongue -->
+      <path d="M-5 26 Q0 34 5 26 Z" fill="#ff8ed0" fill-opacity="0.5"/>
     </g>
   </g>
 
-  <!-- wordmark + tagline -->
+  <!-- wordmark + tagline + pills — right side -->
   <g font-family="'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif">
-    <text x="350" y="178" font-size="122" font-weight="800" letter-spacing="-3.5" fill="url(#word)">Ghost</text>
-    <path class="underline" d="M354 208 H878" stroke="url(#word)" stroke-width="5.5" stroke-linecap="round"/>
-    <text class="tagline" x="354" y="256" font-size="30" font-weight="500" letter-spacing="-0.2" fill="#cfc9e6">A beautiful, free AI assistant for your terminal.</text>
+
+    <!-- glowing text shadow layer (creates the hollow / haunting effect) -->
+    <text x="380" y="184" font-size="130" font-weight="800" letter-spacing="-4"
+          fill="none" stroke="#bd93f9" stroke-width="2" stroke-opacity="0.3"
+          filter="url(#blurMd)" class="glow-text">Ghost</text>
+
+    <!-- main wordmark -->
+    <text x="380" y="184" font-size="130" font-weight="800" letter-spacing="-4"
+          fill="url(#hollow)" filter="url(#textGlow)">Ghost</text>
+
+    <!-- animated underline -->
+    <path class="underline" d="M384 212 H910"
+          stroke="url(#hollow)" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- tagline -->
+    <text class="tagline" x="384" y="264" font-size="32" font-weight="500"
+          letter-spacing="-0.3" fill="#cfc9e6">
+      A beautiful, free AI assistant for your terminal.
+    </text>
 
     <!-- feature pills -->
-    <g class="pills" font-size="19" font-weight="600" letter-spacing="0">
-      <g transform="translate(354 298)">
-        <rect width="188" height="40" rx="20" fill="#bd93f9" fill-opacity="0.12" stroke="#bd93f9" stroke-opacity="0.35" stroke-width="1.2"/>
-        <text x="24" y="26" fill="#bd93f9" font-family="'JetBrains Mono', 'Cascadia Code', monospace">100% free models</text>
+    <g class="pills" font-size="19" font-weight="600">
+      <!-- pill 1: free models -->
+      <g transform="translate(384 310)">
+        <rect width="196" height="42" rx="21"
+              fill="#bd93f9" fill-opacity="0.1" stroke="#bd93f9" stroke-opacity="0.3" stroke-width="1.5"/>
+        <text x="26" y="28" fill="#bd93f9"
+              font-family="'JetBrains Mono','Cascadia Code',monospace">100% free models</text>
       </g>
-      <g transform="translate(558 298)">
-        <rect width="152" height="40" rx="20" fill="#50fa7b" fill-opacity="0.1" stroke="#50fa7b" stroke-opacity="0.35" stroke-width="1.2"/>
-        <text x="22" y="26" fill="#50fa7b" font-family="'JetBrains Mono', 'Cascadia Code', monospace">no API key</text>
+      <!-- pill 2: no API key -->
+      <g transform="translate(598 310)">
+        <rect width="158" height="42" rx="21"
+              fill="#50fa7b" fill-opacity="0.08" stroke="#50fa7b" stroke-opacity="0.3" stroke-width="1.5"/>
+        <text x="24" y="28" fill="#50fa7b"
+              font-family="'JetBrains Mono','Cascadia Code',monospace">no API key</text>
       </g>
-      <g transform="translate(728 298)">
-        <rect width="204" height="40" rx="20" fill="#8be9fd" fill-opacity="0.1" stroke="#8be9fd" stroke-opacity="0.35" stroke-width="1.2"/>
-        <text x="22" y="26" fill="#8be9fd" font-family="'JetBrains Mono', 'Cascadia Code', monospace">macOS / Linux / Win</text>
+      <!-- pill 3: cross-platform -->
+      <g transform="translate(774 310)">
+        <rect width="214" height="42" rx="21"
+              fill="#8be9fd" fill-opacity="0.08" stroke="#8be9fd" stroke-opacity="0.3" stroke-width="1.5"/>
+        <text x="24" y="28" fill="#8be9fd"
+              font-family="'JetBrains Mono','Cascadia Code',monospace">macOS / Linux / Win</text>
       </g>
     </g>
   </g>
