@@ -1,3 +1,0 @@
-# Cloudflare Pages — Astro auto-detected; no additional config needed.
-# For manual deploys: bun run deploy
-pages_build_output_dir = "./dist"
