@@ -62,9 +62,9 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	github.com/zeebo/xxh3 v1.1.0
 	golang.org/x/net v0.55.0
-	golang.org/x/sync v0.20.0
+	golang.org/x/sync v0.21.0
 	golang.org/x/term v0.43.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.38.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.47.0
