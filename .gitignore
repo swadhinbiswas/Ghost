@@ -1,0 +1,29 @@
+# Compiled binaries / build output
+/ghost
+/ghost_test
+*.exe
+*.test
+*.out
+/dist/
+
+# Downloaded tooling archives
+*.tar.gz
+
+# Local app data / runtime
+.ghost/
+*.db
+*.db-shm
+*.db-wal
+
+# Editor / tooling metadata
+.understand-anything/
+.puku-cli/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Go workspace
+go.work
+go.work.sum
+vendor/
