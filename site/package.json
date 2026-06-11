@@ -12,7 +12,7 @@
     "astro": "astro"
   },
   "dependencies": {
-    "animejs": "^3.2.2",
+    "animejs": "^4.4.1",
     "astro": "^5.7.0"
   },
   "devDependencies": {
