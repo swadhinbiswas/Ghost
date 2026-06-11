@@ -1,6 +1,8 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
+import cloudflare from "@astrojs/cloudflare";
+
 // Local dev (and custom-domain deploys) serve at the root '/'.
 // The GitHub Pages *project* site lives under '/Ghost', so the deploy workflow
 // sets DEPLOY_TARGET=pages to build with that base. This keeps
@@ -11,4 +13,5 @@ export default defineConfig({
   site: 'https://swadhinbiswas.github.io',
   base: isPages ? '/Ghost' : '/',
   trailingSlash: 'ignore',
+  adapter: cloudflare()
 });
