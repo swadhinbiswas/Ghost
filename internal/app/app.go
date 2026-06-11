@@ -108,12 +108,25 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore) (*App, er
 		agentNotifications: pubsub.NewBroker[notify.Notification](),
 	}
 
+	// Wire session deletion to clean up collab rooms.
+	// The actual cleanup callback is set in InitCoderAgent once the collab hub exists.
+
 	app.setupEvents()
 
 	// Check for updates in the background.
 	go app.checkForUpdates(ctx)
 
+	// Refresh the dynamic provider model lists (OpenCode Zen + Nvidia NIM) in
+	// the background so the next session reflects the latest free models.
+	// Non-blocking; honors the provider auto-update setting.
+	config.RefreshDynamicProvidersInBackground(cfg.Options.DisableProviderAutoUpdate)
+
 	go mcp.Initialize(ctx, app.Permissions, store)
+
+	// Wire collab allowed origins from config.
+	if cfg.Options.CollabAllowedOrigins != nil {
+		collab.SetAllowedOrigins(cfg.Options.CollabAllowedOrigins)
+	}
 
 	// cleanup database upon app shutdown
 	app.cleanupFuncs = append(
@@ -547,6 +560,14 @@ func (app *App) InitCoderAgent(ctx context.Context) error {
 		return err
 	}
 
+	// Wire session deletion to clean up collab rooms.
+	hub := app.CollabHub()
+	if hub != nil {
+		app.Sessions.SetCleanupFunc(func(sessionID string) {
+			hub.DeleteRoom(sessionID)
+		})
+	}
+
 	// Start collaboration WebSocket server
 	go app.startCollabServer(ctx)
 
@@ -562,9 +583,22 @@ func (app *App) startCollabServer(ctx context.Context) {
 
 	addr := collab.DefaultListenAddr
 	slog.Info("Starting collaboration server", "addr", addr)
-	if err := http.ListenAndServe(addr, hub); err != nil {
-		slog.Error("Collaboration server failed", "error", err)
-	}
+	server := &http.Server{Addr: addr, Handler: hub}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Collaboration server failed", "error", err)
+		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error("Collaboration server shutdown error", "error", err)
+		}
+	}()
 }
 
 // CollabHub returns the collaboration hub if the agent coordinator is ready.
@@ -641,6 +675,17 @@ func (app *App) Shutdown() {
 	wg.Go(func() {
 		shell.GetBackgroundShellManager().KillAll(shutdownCtx)
 	})
+
+	// Shutdown collaboration hub.
+	if app.AgentCoordinator != nil {
+		if hub := app.AgentCoordinator.CollabHub(); hub != nil {
+			wg.Go(func() {
+				if err := hub.Shutdown(shutdownCtx); err != nil {
+					slog.Error("Collaboration hub shutdown error", "error", err)
+				}
+			})
+		}
+	}
 
 	// Shutdown all LSP clients.
 	wg.Go(func() {

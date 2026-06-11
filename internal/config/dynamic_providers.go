@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
-	"regexp"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -34,25 +36,50 @@ var openCodeLargeModelPreferences = []string{
 
 var openCodeSmallModelPreferences = []string{
 	"deepseek-v4-flash-free",
-	"minimax-m2.5-free",
-	"ring-2.6-1t-free",
-	"nemotron-3-super-free",
+	"mimo-v2.5-free",
+	"qwen3.6-plus-free",
+	"north-mini-code-free",
 }
 
 var openCodeDisplayNameOverrides = map[string]string{
 	"big-pickle":             "Big Pickle",
 	"deepseek-v4-flash-free": "DeepSeek V4 Flash Free",
-	"minimax-m2.5-free":      "MiniMax M2.5 Free",
-	"ring-2.6-1t-free":       "Ring 2.6 1T Free",
-	"nemotron-3-super-free":  "Nemotron 3 Super Free",
+	"mimo-v2.5-free":         "Xiaomi MiMo V2.5 Free",
+	"qwen3.6-plus-free":      "Qwen 3.6 Plus Free",
+	"minimax-m3-free":        "MiniMax M3 Free",
+	"nemotron-3-ultra-free":  "Nemotron 3 Ultra Free",
+	"north-mini-code-free":   "North Mini Code Free",
 }
 
+// openCodeFreeModelIDs is a fallback hint set used only for offline/static
+// rendering. The authoritative free-model detection is isOpenCodeFreeModel,
+// which is applied to the live endpoint response.
 var openCodeFreeModelIDs = map[string]struct{}{
 	"big-pickle":             {},
 	"deepseek-v4-flash-free": {},
-	"minimax-m2.5-free":      {},
-	"ring-2.6-1t-free":       {},
-	"nemotron-3-super-free":  {},
+	"mimo-v2.5-free":         {},
+	"qwen3.6-plus-free":      {},
+	"minimax-m3-free":        {},
+	"nemotron-3-ultra-free":  {},
+	"north-mini-code-free":   {},
+}
+
+// isOpenCodeFreeModel reports whether an OpenCode Zen model ID is free.
+// Free models are suffixed "-free"; "big-pickle" is a special stealth free model.
+func isOpenCodeFreeModel(id string) bool {
+	return id == "big-pickle" || strings.HasSuffix(id, "-free")
+}
+
+// openCodeModelsURL is the OpenCode Zen model list endpoint.
+const openCodeModelsURL = "https://opencode.ai/zen/v1/models"
+
+// openCodeModelsEndpoint returns the configured OpenCode Zen models URL,
+// honoring the GHOST_OPENCODE_MODELS_URL override (used for testing/forks).
+func openCodeModelsEndpoint() string {
+	if v := strings.TrimSpace(os.Getenv("GHOST_OPENCODE_MODELS_URL")); v != "" {
+		return v
+	}
+	return openCodeModelsURL
 }
 
 // fetchOpenCodeModels returns the models exposed by the OpenCode Zen model list.
@@ -60,10 +87,11 @@ func fetchOpenCodeModels() ([]catwalk.Model, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://opencode.ai/zen/v1/models", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, openCodeModelsEndpoint(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("opencode: create request: %w", err)
 	}
+	req.Header.Set("User-Agent", "OpenCode/1.0.0")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -89,7 +117,7 @@ func fetchOpenCodeModels() ([]catwalk.Model, error) {
 		if m.ID == "" {
 			continue
 		}
-		if _, ok := openCodeFreeModelIDs[m.ID]; !ok {
+		if !isOpenCodeFreeModel(m.ID) {
 			continue
 		}
 		if _, ok := seen[m.ID]; ok {
@@ -183,117 +211,6 @@ func pickOpenCodeSmallModelID(models []catwalk.Model, largeModelID string) strin
 	return largeModelID
 }
 
-// openRouterModelsResponse matches the OpenRouter /api/v1/models endpoint.
-type openRouterModelsResponse struct {
-	Data []struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		ContextLength int64  `json:"context_length"`
-		TopProvider   struct {
-			MaxCompletionTokens int64 `json:"max_completion_tokens"`
-		} `json:"top_provider"`
-		Pricing struct {
-			Prompt string `json:"prompt"`
-		} `json:"pricing"`
-	} `json:"data"`
-}
-
-// fetchOpenRouterFreeModels returns only models whose IDs end with ":free".
-// It also accepts a set of OpenCode normalized model names so duplicates can
-// be filtered out (OpenCode free models have no rate limits, so we prefer them).
-func fetchOpenRouterFreeModels(ocNormalized map[string]struct{}) ([]catwalk.Model, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://openrouter.ai/api/v1/models", nil)
-	if err != nil {
-		return nil, fmt.Errorf("openrouter: create request: %w", err)
-	}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("openrouter: fetch models: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("openrouter: unexpected status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var parsed openRouterModelsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-		return nil, fmt.Errorf("openrouter: decode response: %w", err)
-	}
-
-	var models []catwalk.Model
-	for _, m := range parsed.Data {
-		if !strings.HasSuffix(m.ID, ":free") {
-			continue
-		}
-
-		// Skip OpenRouter models that are also available for free on OpenCode
-		// (OpenCode doesn't have the strict rate limits that OpenRouter free tier has).
-		norm := normalizeModelID(m.ID)
-		if _, isDup := ocNormalized[norm]; isDup {
-			continue
-		}
-
-		name := m.Name
-		if name == "" {
-			name = displayNameFromID(m.ID)
-		}
-		ctxWindow := m.ContextLength
-		if ctxWindow == 0 {
-			ctxWindow = 128000
-		}
-		maxTok := m.TopProvider.MaxCompletionTokens
-		if maxTok == 0 {
-			maxTok = 8192
-		}
-		models = append(models, catwalk.Model{
-			ID:               m.ID,
-			Name:             name,
-			ContextWindow:    ctxWindow,
-			DefaultMaxTokens: maxTok,
-		})
-	}
-	return models, nil
-}
-
-// sizeSuffixes matches common model size suffixes like "-8b", "-70b-instruct", "-120b-a12b".
-var sizeSuffixes = regexp.MustCompile(`-\d+[Bb](?:-\w+)*$`)
-
-// normalizeModelID strips provider prefixes, free suffixes, and size details so
-// models can be compared across providers.
-//
-// Examples:
-//
-//	"hy3-preview-free"           -> "hy3 preview"
-//	"tencent/hy3-preview:free"   -> "hy3 preview"
-//	"minimax-m2.5-free"          -> "minimax m2.5"
-//	"minimax/minimax-m2.5:free"  -> "minimax m2.5"
-func normalizeModelID(id string) string {
-	// Strip provider prefix (e.g. "tencent/", "nvidia/").
-	if idx := strings.LastIndex(id, "/"); idx != -1 {
-		id = id[idx+1:]
-	}
-
-	// Strip free suffixes.
-	id = strings.TrimSuffix(id, ":free")
-	id = strings.TrimSuffix(id, "-free")
-
-	// Strip size suffixes like "-120b-a12b", "-8b-instruct".
-	id = sizeSuffixes.ReplaceAllString(id, "")
-
-	// Normalize separators to spaces.
-	id = strings.ReplaceAll(id, "-", " ")
-	id = strings.ReplaceAll(id, "_", " ")
-	id = strings.ToLower(strings.TrimSpace(id))
-
-	return id
-}
-
 // displayNameFromID converts a model ID like "minimax-m2.5-free" into "MiniMax M2.5 Free".
 func displayNameFromID(id string) string {
 	// Strip known suffixes.
@@ -317,11 +234,28 @@ func displayNameFromID(id string) string {
 
 // fetchDynamicProviders returns providers whose model lists are fetched live from APIs.
 // Errors are logged and the provider is omitted if the fetch fails.
+// fetchDynamicProviders returns providers whose model lists are cached locally.
 func fetchDynamicProviders() []catwalk.Provider {
+	// Try loading from cache first to avoid slow network lookups on startup
+	if cached, err := loadDynamicProvidersFromCache(); err == nil && len(cached) > 0 {
+		return cached
+	}
+
+	// Fallback to static embedded/local providers if cache is empty/invalid
+	return getStaticDynamicProvidersFallback()
+}
+
+// fetchFreshDynamicProviders fetches dynamic providers remotely. Each source is
+// best-effort: a failure is logged and that provider is simply omitted from the
+// fresh set (callers fall back to cache or embedded defaults).
+func fetchFreshDynamicProviders() []catwalk.Provider {
 	var out []catwalk.Provider
 
 	// 1. OpenCode Zen – fetch first so we can use its model list to deduplicate OpenRouter.
-	ocModels, _ := fetchOpenCodeModels()
+	ocModels, err := fetchOpenCodeModels()
+	if err != nil {
+		slog.Warn("Failed to fetch OpenCode Zen models, will use cache/fallback", "error", err)
+	}
 	if len(ocModels) > 0 {
 		largeModelID := pickOpenCodeModelID(ocModels, openCodeLargeModelPreferences)
 		smallModelID := pickOpenCodeSmallModelID(ocModels, largeModelID)
@@ -336,24 +270,67 @@ func fetchDynamicProviders() []catwalk.Provider {
 		})
 	}
 
-	// Build a lookup set of normalized OpenCode model names.
-	ocNormalized := make(map[string]struct{}, len(ocModels))
-	for _, m := range ocModels {
-		ocNormalized[normalizeModelID(m.ID)] = struct{}{}
-	}
-
-	// 2. OpenRouter – free models only, minus duplicates already offered by OpenCode.
-	if orModels, err := fetchOpenRouterFreeModels(ocNormalized); err == nil && len(orModels) > 0 {
-		out = append(out, catwalk.Provider{
-			ID:                  "openrouter",
-			Name:                "OpenRouter",
-			APIEndpoint:         "https://openrouter.ai/api/v1",
-			Type:                catwalk.TypeOpenAI,
-			DefaultLargeModelID: orModels[0].ID,
-			DefaultSmallModelID: orModels[0].ID,
-			Models:              orModels,
-		})
+	// 2. Nvidia NIM – fetch the live model catalog from the remote JSON source.
+	if nim, err := fetchNvidiaNimProvider(); err != nil {
+		slog.Warn("Failed to fetch Nvidia NIM models, will use cache/fallback", "error", err)
+	} else {
+		out = append(out, nim)
 	}
 
 	return out
+}
+
+func saveDynamicProvidersToCache(providers []catwalk.Provider) error {
+	path := cachePathFor("dynamic_providers")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	data, err := json.Marshal(providers)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func loadDynamicProvidersFromCache() ([]catwalk.Provider, error) {
+	path := cachePathFor("dynamic_providers")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var providers []catwalk.Provider
+	if err := json.Unmarshal(data, &providers); err != nil {
+		return nil, err
+	}
+	return providers, nil
+}
+
+func getStaticDynamicProvidersFallback() []catwalk.Provider {
+	var out []catwalk.Provider
+
+	// 1. OpenCode Zen static fallback
+	out = append(out, catwalk.Provider{
+		ID:                  "opencode",
+		Name:                "OpenCode Zen",
+		APIEndpoint:         "https://opencode.ai/zen/v1",
+		APIKey:              "no-key-needed",
+		Type:                catwalk.TypeOpenAICompat,
+		DefaultLargeModelID: "big-pickle",
+		DefaultSmallModelID: "deepseek-v4-flash-free",
+		Models:              getStaticOpenCodeModels(),
+	})
+
+	return out
+}
+
+func getStaticOpenCodeModels() []catwalk.Model {
+	return []catwalk.Model{
+		{ID: "big-pickle", Name: "Big Pickle (stealth free)", ContextWindow: 200_000, DefaultMaxTokens: 8192},
+		{ID: "deepseek-v4-flash-free", Name: "DeepSeek V4 Flash Free", ContextWindow: 128_000, DefaultMaxTokens: 8192},
+		{ID: "mimo-v2.5-free", Name: "Xiaomi MiMo V2.5 Free", ContextWindow: 128_000, DefaultMaxTokens: 8192},
+		{ID: "qwen3.6-plus-free", Name: "Qwen 3.6 Plus Free", ContextWindow: 128_000, DefaultMaxTokens: 8192},
+		{ID: "minimax-m3-free", Name: "MiniMax M3 Free", ContextWindow: 128_000, DefaultMaxTokens: 8192, CanReason: true},
+		{ID: "nemotron-3-ultra-free", Name: "Nemotron 3 Ultra Free", ContextWindow: 1_000_000, DefaultMaxTokens: 8192, CanReason: true},
+		{ID: "north-mini-code-free", Name: "North Mini Code Free", ContextWindow: 128_000, DefaultMaxTokens: 8192},
+	}
 }

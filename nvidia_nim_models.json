@@ -1,0 +1,84 @@
+{
+  "id": "nvidia-nim",
+  "name": "Nvidia NIM",
+  "api_endpoint": "https://integrate.api.nvidia.com/v1",
+  "api_key": "$NVIDIA_API_KEY",
+  "type": "openai-compat",
+  "default_large_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "default_small_model_id": "deepseek-ai/deepseek-v4-flash",
+  "updated_at": "2026-06-11",
+  "models": [
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b",
+      "name": "Nemotron 3 Ultra 550B (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384,
+      "can_reason": true
+    },
+    {
+      "id": "deepseek-ai/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384,
+      "can_reason": true
+    },
+    {
+      "id": "deepseek-ai/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384,
+      "can_reason": true
+    },
+    {
+      "id": "z-ai/glm-5.1",
+      "name": "GLM 5.1 (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384,
+      "can_reason": true
+    },
+    {
+      "id": "moonshotai/kimi-k2.6",
+      "name": "Kimi K2.6 (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384
+    },
+    {
+      "id": "qwen/qwen3.5-397b-a17b",
+      "name": "Qwen 3.5 397B A17B (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384
+    },
+    {
+      "id": "qwen/qwen3.5-122b-a10b",
+      "name": "Qwen 3.5 122B A10B (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384
+    },
+    {
+      "id": "mistralai/mistral-medium-3.5-128b",
+      "name": "Mistral Medium 3.5 128B (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384,
+      "can_reason": true
+    },
+    {
+      "id": "stepfun-ai/step-3.7-flash",
+      "name": "Step 3.7 Flash (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 16384
+    },
+    {
+      "id": "minimaxai/minimax-m2.7",
+      "name": "MiniMax M2.7 (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 8192
+    },
+    {
+      "id": "google/diffusiongemma-26b-a4b-it",
+      "name": "DiffusionGemma 26B A4B IT (NIM)",
+      "context_window": 128000,
+      "default_max_tokens": 4096,
+      "can_reason": true
+    }
+  ]
+}
