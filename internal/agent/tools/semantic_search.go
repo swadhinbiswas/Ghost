@@ -51,7 +51,7 @@ func NewSemanticSearchTool(index *semantic.Index, workingDir string) fantasy.Age
 			}
 
 			var sb strings.Builder
-			sb.WriteString(fmt.Sprintf("Found %d relevant code snippets for: %q\n\n", len(results), params.Query))
+			fmt.Fprintf(&sb, "Found %d relevant code snippets for: %q\n\n", len(results), params.Query)
 
 			files := make(map[string]bool)
 			topScore := float32(0)
@@ -63,9 +63,9 @@ func NewSemanticSearchTool(index *semantic.Index, workingDir string) fantasy.Age
 				files[r.FilePath] = true
 
 				scorePct := int(r.Score * 100)
-				sb.WriteString(fmt.Sprintf("--- Result %d (relevance: %d%%) ---\n", i+1, scorePct))
-				sb.WriteString(fmt.Sprintf("File: %s (lines %d-%d)\n", r.FilePath, r.StartLine, r.EndLine))
-				sb.WriteString(fmt.Sprintf("Language: %s\n\n", r.Language))
+				fmt.Fprintf(&sb, "--- Result %d (relevance: %d%%) ---\n", i+1, scorePct)
+				fmt.Fprintf(&sb, "File: %s (lines %d-%d)\n", r.FilePath, r.StartLine, r.EndLine)
+				fmt.Fprintf(&sb, "Language: %s\n\n", r.Language)
 				sb.WriteString(r.Content)
 				sb.WriteString("\n\n")
 			}

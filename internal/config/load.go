@@ -238,7 +238,7 @@ func (c *Config) configureProviders(store *ConfigStore, env env.Env, resolver Va
 		switch {
 		case p.ID == catwalk.InferenceProviderAnthropic && config.OAuthToken != nil:
 			// Claude Code subscription is not supported anymore. Remove to show onboarding.
-			store.RemoveConfigField(ScopeGlobal, "providers.anthropic")
+			_ = store.RemoveConfigField(ScopeGlobal, "providers.anthropic")
 			c.Providers.Del(string(p.ID))
 			continue
 		case p.ID == catwalk.InferenceProviderCopilot && config.OAuthToken != nil:
@@ -467,7 +467,7 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 func (c *Config) applyLSPDefaults() {
 	// Get powernap's default configuration
 	configManager := powernapConfig.NewManager()
-	configManager.LoadDefaults()
+	_ = configManager.LoadDefaults()
 
 	// Apply defaults to each LSP configuration
 	for name, cfg := range c.LSP {

@@ -45,8 +45,8 @@ func (c chromaFormatter) Format(w io.Writer, style *chroma.Style, it chroma.Iter
 		if entry.Italic == chroma.Yes {
 			s = s.Italic(true)
 		}
-		if entry.Colour.IsSet() {
-			s = s.Foreground(lipgloss.Color(entry.Colour.String()))
+		if entry.Colour.IsSet() { //nolint:misspell
+			s = s.Foreground(lipgloss.Color(entry.Colour.String())) //nolint:misspell
 		}
 
 		if _, err := fmt.Fprint(w, s.Render(value)); err != nil {

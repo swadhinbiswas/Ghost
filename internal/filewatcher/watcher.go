@@ -67,7 +67,7 @@ func New(workingDir string) *Watcher {
 }
 
 // Subscribe returns a channel that receives file change events.
-// The channel is cancelled when the provided context is done.
+// The channel is canceled when the provided context is done.
 func (w *Watcher) Subscribe(ctx context.Context) <-chan pubsub.Event[Event] {
 	return w.events.Subscribe(ctx)
 }
@@ -189,7 +189,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		if event.Has(fsnotify.Create) {
 			name := filepath.Base(event.Name)
 			if !w.ignoreDirs[name] && !strings.HasPrefix(name, ".") {
-				w.watcher.Add(event.Name)
+				_ = w.watcher.Add(event.Name)
 			}
 		}
 		return

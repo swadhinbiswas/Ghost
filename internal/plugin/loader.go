@@ -260,7 +260,7 @@ func (l *Loader) Install(sourceDir string) (*Manifest, error) {
 
 // Uninstall removes a plugin by name.
 func (l *Loader) Uninstall(name string) error {
-	l.Unload(name)
+	_ = l.Unload(name)
 
 	pluginDir := filepath.Join(l.pluginsDir, name)
 	return os.RemoveAll(pluginDir)

@@ -82,9 +82,7 @@ func NewAtomicEditTool(
 			for _, edit := range params.Edits {
 				absPath := filepathext.SmartJoin(workingDir, edit.FilePath)
 				relPath := strings.TrimPrefix(absPath, workingDir)
-				if strings.HasPrefix(relPath, "/") {
-					relPath = relPath[1:]
-				}
+				relPath = strings.TrimPrefix(relPath, "/")
 
 				if edit.OldString == "" {
 					// Create new file
@@ -119,7 +117,7 @@ func NewAtomicEditTool(
 				}
 
 				// Compute new content
-				newContent := strings.Replace(oldContent, edit.OldString, edit.NewString, -1)
+				newContent := strings.ReplaceAll(oldContent, edit.OldString, edit.NewString)
 				if !edit.ReplaceAll {
 					newContent = strings.Replace(oldContent, edit.OldString, edit.NewString, 1)
 				}
@@ -192,7 +190,7 @@ func NewAtomicEditTool(
 				// Write file
 				if err := os.WriteFile(plan.absPath, []byte(content), 0o644); err != nil {
 					rollback(appliedPaths, backups)
-					return fantasy.ToolResponse{}, fmt.Errorf("failed to write %s: %w. All changes have been rolled back.", plan.relPath, err)
+					return fantasy.ToolResponse{}, fmt.Errorf("failed to write %s: %w; all changes have been rolled back", plan.relPath, err)
 				}
 
 				appliedPaths = append(appliedPaths, plan.absPath)
@@ -202,15 +200,15 @@ func NewAtomicEditTool(
 
 				// Update history
 				if plan.isCreate {
-					files.Create(ctx, sessionID, plan.absPath, "")
+					_, _ = files.Create(ctx, sessionID, plan.absPath, "")
 				}
-				files.CreateVersion(ctx, sessionID, plan.absPath, plan.newContent)
+				_, _ = files.CreateVersion(ctx, sessionID, plan.absPath, plan.newContent)
 			}
 
 			// Phase 4: Build response
 			var sb strings.Builder
-			sb.WriteString(fmt.Sprintf("Successfully edited %d file(s) atomically\n\n", len(plans)))
-			sb.WriteString(fmt.Sprintf("Summary: +%d added, -%d removed\n\n", totalAdditions, totalRemovals))
+			fmt.Fprintf(&sb, "Successfully edited %d file(s) atomically\n\n", len(plans))
+			fmt.Fprintf(&sb, "Summary: +%d added, -%d removed\n\n", totalAdditions, totalRemovals)
 
 			for _, dp := range diffPreviews {
 				sb.WriteString(dp)
@@ -254,7 +252,7 @@ func buildEditSummary(plans []editPlan) string {
 func rollback(appliedPaths []string, backups map[string]string) {
 	for _, path := range appliedPaths {
 		if content, ok := backups[path]; ok {
-			os.WriteFile(path, []byte(content), 0o644)
+			_ = os.WriteFile(path, []byte(content), 0o644)
 		} else {
 			// Was a new file - delete it
 			os.Remove(path)

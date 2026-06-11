@@ -186,7 +186,7 @@ func (m *BackgroundShellManager) Cleanup() int {
 	}
 
 	for _, id := range toRemove {
-		m.Remove(id)
+		_ = m.Remove(id)
 	}
 
 	return len(toRemove)

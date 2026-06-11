@@ -13,8 +13,6 @@ import (
 	"charm.land/fantasy"
 )
 
-var embedded []byte
-
 var Enabled = sync.OnceValue(func() bool {
 	b, _ := strconv.ParseBool(
 		cmp.Or(

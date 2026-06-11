@@ -125,7 +125,7 @@ func captureFull() ([]byte, string, error) {
 		}
 		return nil, "", fmt.Errorf("no screenshot tool found. Install grim, scrot, or ImageMagick")
 	case "windows":
-		return nil, "", fmt.Errorf("Windows screenshot requires PowerShell; use 'file' mode with an existing screenshot")
+		return nil, "", fmt.Errorf("windows screenshot requires PowerShell; use 'file' mode with an existing screenshot")
 	default:
 		return nil, "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
@@ -201,7 +201,7 @@ type region struct {
 // parseRegion parses a region string like "800x600+100+50".
 func parseRegion(s string) region {
 	var r region
-	fmt.Sscanf(s, "%dx%d+%d+%d", &r.w, &r.h, &r.x, &r.y)
+	_, _ = fmt.Sscanf(s, "%dx%d+%d+%d", &r.w, &r.h, &r.x, &r.y)
 	return r
 }
 
@@ -245,7 +245,7 @@ func AnalyzeScreenshot(description string) string {
 	sb.WriteString("3. **Errors/Issues**: Identify any error messages, warnings, or visual issues\n")
 	sb.WriteString("4. **Suggestions**: Recommend actions based on what you see\n\n")
 	if description != "" {
-		sb.WriteString(fmt.Sprintf("Context: %s\n\n", description))
+		fmt.Fprintf(&sb, "Context: %s\n\n", description)
 	}
 	sb.WriteString("Be specific and actionable in your analysis.")
 	return sb.String()

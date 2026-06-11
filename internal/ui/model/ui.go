@@ -1435,7 +1435,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			if err := m.com.Store().UpdatePreferredModel(config.ScopeGlobal, agentCfg.Model, currentModel); err != nil {
 				return util.ReportError(err)()
 			}
-			m.com.App.UpdateAgentModel(context.TODO())
+			_ = m.com.App.UpdateAgentModel(context.TODO())
 			status := "disabled"
 			if currentModel.Think {
 				status = "enabled"
@@ -1587,7 +1587,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}
 
 		cmds = append(cmds, func() tea.Msg {
-			m.com.App.UpdateAgentModel(context.TODO())
+			_ = m.com.App.UpdateAgentModel(context.TODO())
 			return util.NewInfoMsg("Reasoning effort set to " + msg.Effort)
 		})
 		m.dialog.CloseDialog(dialog.ReasoningID)
@@ -3404,8 +3404,6 @@ func (m *UI) newSession() tea.Cmd {
 	m.sessionFileReads = nil
 	m.setState(uiLanding, uiFocusEditor)
 	m.landingFrame = 0
-	var cmds []tea.Cmd
-	cmds = append(cmds, m.tickLanding())
 	m.textarea.Focus()
 	m.chat.Blur()
 	m.chat.ClearMessages()
@@ -3712,7 +3710,7 @@ func (m *UI) runMCPPrompt(clientID, promptID string, arguments map[string]string
 
 func (m *UI) handleStateChanged() tea.Cmd {
 	return func() tea.Msg {
-		m.com.App.UpdateAgentModel(context.Background())
+		_ = m.com.App.UpdateAgentModel(context.Background())
 		return mcpStateChangedMsg{
 			states: mcp.GetStates(),
 		}
@@ -4326,13 +4324,13 @@ func (m *UI) exportSessionToMarkdown(messages []message.Message) string {
 
 		// Include tool calls and results
 		for _, tc := range msg.ToolCalls() {
-			sb.WriteString(fmt.Sprintf("Tool: **%s** (ID: %s)\nInput: %s\n\n", tc.Name, tc.ID, tc.Input))
+			fmt.Fprintf(&sb, "Tool: **%s** (ID: %s)\nInput: %s\n\n", tc.Name, tc.ID, tc.Input)
 		}
 		for _, tr := range msg.ToolResults() {
 			if tr.IsError {
-				sb.WriteString(fmt.Sprintf("Tool result error: %s\n\n", tr.Content))
+				fmt.Fprintf(&sb, "Tool result error: %s\n\n", tr.Content)
 			} else {
-				sb.WriteString(fmt.Sprintf("Tool result: %s\n\n", tr.Content))
+				fmt.Fprintf(&sb, "Tool result: %s\n\n", tr.Content)
 			}
 		}
 
@@ -4343,7 +4341,7 @@ func (m *UI) exportSessionToMarkdown(messages []message.Message) string {
 
 		// Include images
 		for _, img := range msg.ImageURLContent() {
-			sb.WriteString(fmt.Sprintf("![image](%s)\n\n", img.URL))
+			fmt.Fprintf(&sb, "![image](%s)\n\n", img.URL)
 		}
 
 		// Separator between messages (except after last)

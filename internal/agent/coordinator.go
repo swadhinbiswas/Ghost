@@ -358,7 +358,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 
 	mergedOptions := make(map[string]any)
 
-	err = json.Unmarshal([]byte(got), &mergedOptions)
+	err = json.Unmarshal(got, &mergedOptions)
 	if err != nil {
 		slog.Error("Could not create config for call", "err", err)
 		return options
@@ -1001,10 +1001,11 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 			if providerCfg.ExtraBody == nil {
 				providerCfg.ExtraBody = map[string]any{}
 			}
-			if model.Model == "nemotron-3-super-free" {
+			switch model.Model {
+			case "nemotron-3-super-free":
 				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"enable_thinking": true}
 				providerCfg.ExtraBody["reasoning_budget"] = 16384
-			} else if model.Model == "deepseek-v4-flash-free" || model.Model == "big-pickle" {
+			case "deepseek-v4-flash-free", "big-pickle":
 				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"thinking": true, "reasoning_effort": "high"}
 			}
 		}
@@ -1012,12 +1013,13 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 			if providerCfg.ExtraBody == nil {
 				providerCfg.ExtraBody = map[string]any{}
 			}
-			if model.Model == "nvidia/nemotron-3-ultra-550b-a55b" || model.Model == "nvidia/nemotron-3-super-120b-a12b" {
+			switch model.Model {
+			case "nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3-super-120b-a12b":
 				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"enable_thinking": true}
 				providerCfg.ExtraBody["reasoning_budget"] = 16384
-			} else if model.Model == "deepseek-ai/deepseek-v4-flash" {
+			case "deepseek-ai/deepseek-v4-flash":
 				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"thinking": true, "reasoning_effort": "high"}
-			} else if model.Model == "google/gemma-4-31b-it" {
+			case "google/gemma-4-31b-it":
 				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"enable_thinking": true}
 			}
 		}

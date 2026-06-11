@@ -268,10 +268,10 @@ func parseTestOutput(framework, output string) TestResult {
 		passedRe := regexp.MustCompile(`"numPassedTests":(\d+)`)
 		failedRe := regexp.MustCompile(`"numFailedTests":(\d+)`)
 		if m := passedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Passed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Passed)
 		}
 		if m := failedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Failed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Failed)
 		}
 	case "pytest":
 		passedRe := regexp.MustCompile(`(\d+) passed`)
@@ -279,29 +279,29 @@ func parseTestOutput(framework, output string) TestResult {
 		errorRe := regexp.MustCompile(`(\d+) error`)
 		skippedRe := regexp.MustCompile(`(\d+) skipped`)
 		if m := passedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Passed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Passed)
 		}
 		if m := failedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Failed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Failed)
 		}
 		if m := errorRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Failed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Failed)
 		}
 		if m := skippedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Skipped)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Skipped)
 		}
 	case "rust":
 		passedRe := regexp.MustCompile(`(\d+) passed`)
 		failedRe := regexp.MustCompile(`(\d+) failed`)
 		ignoredRe := regexp.MustCompile(`(\d+) ignored`)
 		if m := passedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Passed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Passed)
 		}
 		if m := failedRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Failed)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Failed)
 		}
 		if m := ignoredRe.FindStringSubmatch(output); len(m) > 1 {
-			fmt.Sscanf(m[1], "%d", &result.Skipped)
+			_, _ = fmt.Sscanf(m[1], "%d", &result.Skipped)
 		}
 	default:
 		// Generic fallback: count "PASS" and "FAIL" lines
@@ -316,7 +316,7 @@ func parseTestOutput(framework, output string) TestResult {
 
 func formatTestResult(result TestResult, rawOutput string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Passed: %d | Failed: %d | Skipped: %d\n", result.Passed, result.Failed, result.Skipped))
+	fmt.Fprintf(&sb, "Passed: %d | Failed: %d | Skipped: %d\n", result.Passed, result.Failed, result.Skipped)
 	if result.Failed > 0 && rawOutput != "" {
 		sb.WriteString("\n--- Test Output ---\n")
 		sb.WriteString(truncateTestOutput(rawOutput))

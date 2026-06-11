@@ -19,10 +19,6 @@ import (
 	"github.com/swadhinbiswas/ghost/internal/home"
 )
 
-type syncer[T any] interface {
-	Get(context.Context) (T, error)
-}
-
 // file to cache provider data
 func cachePathFor(name string) string {
 	xdgDataHome := os.Getenv("XDG_DATA_HOME")
@@ -124,11 +120,6 @@ func UpdateHyper(pathOrURL string) error {
 	slog.Info("Hyper provider updated successfully", "from", pathOrURL, "to", cachePathFor("hyper"))
 	return nil
 }
-
-var (
-	catwalkSyncer = &catwalkSync{}
-	hyperSyncer   = &hyperSync{}
-)
 
 // allowedProviders is the set of provider IDs we want to keep.
 // Only Nvidia NIM (free tier) and OpenCode Zen (free models) are allowed.

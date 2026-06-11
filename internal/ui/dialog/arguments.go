@@ -305,7 +305,6 @@ func (a *Arguments) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	renderedFields := lipgloss.JoinVertical(lipgloss.Left, fields...)
 
 	// Anchor width to the longest field, capped at maxInputWidth.
-	const scrollbarWidth = 1
 	width := lipgloss.Width(renderedFields)
 	height := lipgloss.Height(renderedFields)
 

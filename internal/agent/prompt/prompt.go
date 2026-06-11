@@ -145,7 +145,7 @@ func processContextPath(p string, store *config.ConfigStore) []ContextFile {
 	walker := fsext.NewFastGlobWalker(store.WorkingDir())
 
 	if info.IsDir() {
-		filepath.WalkDir(fullPath, func(path string, d os.DirEntry, err error) error {
+		_ = filepath.WalkDir(fullPath, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -214,7 +214,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 	}
 	projectMemory := make(map[string]string)
 	if memData, err := os.ReadFile(filepath.Join(workingDir, ".ghost", "memory.json")); err == nil {
-		json.Unmarshal(memData, &projectMemory)
+		_ = json.Unmarshal(memData, &projectMemory)
 	}
 
 	// Load project rules from GHOST.md or .ghostrules
@@ -292,20 +292,20 @@ func getGitBootContext(ctx context.Context, dir string) (string, error) {
 	untracked, _, _ := sh.Exec(ctx, "git status --short | grep '^\\?\\?' | wc -l | tr -d ' '")
 	modified, _, _ := sh.Exec(ctx, "git status --short | grep -v '^\\?\\?' | wc -l | tr -d ' '")
 	if untracked != "" || modified != "" {
-		sb.WriteString(fmt.Sprintf("Untracked files: %s | Modified/Staged: %s\n", untracked, modified))
+		fmt.Fprintf(&sb, "Untracked files: %s | Modified/Staged: %s\n", untracked, modified)
 	}
 
 	// Stashes
 	stash, _, _ := sh.Exec(ctx, "git stash list 2>/dev/null | wc -l | tr -d ' '")
 	if stash != "" && stash != "0" {
-		sb.WriteString(fmt.Sprintf("Stashes: %s\n", stash))
+		fmt.Fprintf(&sb, "Stashes: %s\n", stash)
 	}
 
 	// Upstream status
 	ahead, _, _ := sh.Exec(ctx, "git rev-list --count HEAD @{u} 2>/dev/null || echo 0")
 	behind, _, _ := sh.Exec(ctx, "git rev-list --count @{u} HEAD 2>/dev/null || echo 0")
 	if ahead != "" && behind != "" {
-		sb.WriteString(fmt.Sprintf("Upstream: ahead %s, behind %s\n", ahead, behind))
+		fmt.Fprintf(&sb, "Upstream: ahead %s, behind %s\n", ahead, behind)
 	}
 
 	if sb.Len() == 0 {
@@ -384,14 +384,14 @@ func loadFeedbackContext(workingDir string) string {
 
 	var sb strings.Builder
 	sb.WriteString("\n<user_feedback_history>\n")
-	sb.WriteString(fmt.Sprintf("Total feedback received: %d\n", stats.Total))
-	sb.WriteString(fmt.Sprintf("Satisfaction rate: %.1f%%\n", stats.SatisfactionRate))
+	fmt.Fprintf(&sb, "Total feedback received: %d\n", stats.Total)
+	fmt.Fprintf(&sb, "Satisfaction rate: %.1f%%\n", stats.SatisfactionRate)
 
 	insights := store.GetPatternInsights()
 	if len(insights) > 0 {
 		sb.WriteString("\nPatterns identified from your feedback:\n")
 		for _, insight := range insights {
-			sb.WriteString(fmt.Sprintf("- %s\n", insight))
+			fmt.Fprintf(&sb, "- %s\n", insight)
 		}
 	}
 

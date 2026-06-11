@@ -62,7 +62,7 @@ func (s *SandboxManager) getOrCreateContainer(ctx context.Context) (string, erro
 	containerName := fmt.Sprintf("ghost-sandbox-%x", len(s.WorkingDir))
 
 	// Try to remove old container if it exists
-	exec.Command("docker", "rm", "-f", containerName).Run()
+	_ = exec.Command("docker", "rm", "-f", containerName).Run()
 
 	cmd := exec.CommandContext(ctx, "docker", "run", "-d",
 		"--name", containerName,

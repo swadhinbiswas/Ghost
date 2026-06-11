@@ -62,12 +62,12 @@ func NewSymbolsTool(workingDir string) fantasy.AgentTool {
 
 			// Format results
 			var sb strings.Builder
-			sb.WriteString(fmt.Sprintf("Found %d symbols:\n\n", len(symbols)))
+			fmt.Fprintf(&sb, "Found %d symbols:\n\n", len(symbols))
 
 			for _, s := range symbols {
-				sb.WriteString(fmt.Sprintf("- **%s** (%s) in `%s:%d`", s.Name, s.Type, s.File, s.Line))
+				fmt.Fprintf(&sb, "- **%s** (%s) in `%s:%d`", s.Name, s.Type, s.File, s.Line)
 				if s.Signature != "" {
-					sb.WriteString(fmt.Sprintf(": `%s`", s.Signature))
+					fmt.Fprintf(&sb, ": `%s`", s.Signature)
 				}
 				sb.WriteString("\n")
 			}

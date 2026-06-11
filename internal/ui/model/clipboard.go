@@ -10,6 +10,6 @@ const (
 )
 
 var (
-	errClipboardPlatformUnsupported = errors.New("clipboard operations are not supported on this platform")
+	errClipboardPlatformUnsupported = errors.New("clipboard operations are not supported on this platform") //nolint:unused
 	errClipboardUnknownFormat       = errors.New("unknown clipboard format")
 )

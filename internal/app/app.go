@@ -270,7 +270,7 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	}
 
 	// force update of agent models before running so mcp tools are loaded
-	app.AgentCoordinator.UpdateModels(ctx)
+	_ = app.AgentCoordinator.UpdateModels(ctx)
 
 	defer stopSpinner()
 
@@ -334,7 +334,7 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 			stopSpinner()
 			if result.err != nil {
 				if errors.Is(result.err, context.Canceled) || errors.Is(result.err, agent.ErrRequestCancelled) {
-					slog.Debug("Non-interactive: agent processing cancelled", "session_id", sess.ID)
+					slog.Debug("Non-interactive: agent processing canceled", "session_id", sess.ID)
 					return nil
 				}
 				return fmt.Errorf("agent processing failed: %w", result.err)
@@ -527,11 +527,11 @@ func setupSubscriber[T any](
 				case <-sendTimer.C:
 					slog.Debug("Message dropped due to slow consumer", "name", name)
 				case <-ctx.Done():
-					slog.Debug("Subscription cancelled", "name", name)
+					slog.Debug("Subscription canceled", "name", name)
 					return
 				}
 			case <-ctx.Done():
-				slog.Debug("Subscription cancelled", "name", name)
+				slog.Debug("Subscription canceled", "name", name)
 				return
 			}
 		}
@@ -626,7 +626,7 @@ func (app *App) Subscribe(program *tea.Program) {
 	app.tuiWG.Add(1)
 	tuiCtx, tuiCancel := context.WithCancel(app.globalCtx)
 	app.cleanupFuncs = append(app.cleanupFuncs, func(context.Context) error {
-		slog.Debug("Cancelling TUI message handler")
+		slog.Debug("Canceling TUI message handler")
 		tuiCancel()
 		app.tuiWG.Wait()
 		return nil

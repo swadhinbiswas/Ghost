@@ -224,7 +224,7 @@ func isValidRoomID(roomID string) bool {
 		return false
 	}
 	for _, c := range roomID {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
 			return false
 		}
 	}
@@ -240,9 +240,9 @@ func (h *Hub) readPump(client *Client, room *Room) {
 
 	conn := client.Conn
 	conn.SetReadLimit(maxMessageSize)
-	conn.SetReadDeadline(time.Now().Add(pongWait))
+	_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
@@ -310,7 +310,7 @@ func (h *Hub) readPump(client *Client, room *Room) {
 			}
 			cursorOp.ClientID = client.ID
 			cursorOp.Type = OpCursor
-			room.ApplyAndBroadcast(cursorOp)
+			_ = room.ApplyAndBroadcast(cursorOp)
 
 		case "chat":
 			var chatMsg struct {
@@ -331,7 +331,7 @@ func (h *Hub) readPump(client *Client, room *Room) {
 			})
 
 		case "ping":
-			client.SendJSON(Message{Type: "pong"})
+			_ = client.SendJSON(Message{Type: "pong"})
 
 		default:
 			slog.Warn("Unknown message type received", "type", msg.Type, "room", room.ID, "client", client.ID)
@@ -346,9 +346,9 @@ func (h *Hub) writePump(client *Client) {
 	for {
 		select {
 		case message, ok := <-client.Send:
-			client.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = client.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -356,13 +356,13 @@ func (h *Hub) writePump(client *Client) {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			_, _ = w.Write(message)
 
 			// Batch pending messages
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-client.Send)
+				_, _ = w.Write([]byte{'\n'})
+				_, _ = w.Write(<-client.Send)
 			}
 
 			if err := w.Close(); err != nil {
@@ -370,7 +370,7 @@ func (h *Hub) writePump(client *Client) {
 			}
 
 		case <-ticker.C:
-			client.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = client.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := client.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

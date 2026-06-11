@@ -207,9 +207,9 @@ func mergeResults(results []swarmWorkerResult, strategy string) string {
 	case "compare":
 		sb.WriteString("## Swarm Comparison Results\n\n")
 		for _, r := range results {
-			sb.WriteString(fmt.Sprintf("### %s\n\n", r.Task))
+			fmt.Fprintf(&sb, "### %s\n\n", r.Task)
 			if r.Error != "" {
-				sb.WriteString(fmt.Sprintf("**Error:** %s\n\n", r.Error))
+				fmt.Fprintf(&sb, "**Error:** %s\n\n", r.Error)
 			} else {
 				sb.WriteString(r.Response + "\n\n")
 			}
@@ -219,9 +219,9 @@ func mergeResults(results []swarmWorkerResult, strategy string) string {
 	case "divide_conquer":
 		sb.WriteString("## Swarm Phased Results\n\n")
 		for _, r := range results {
-			sb.WriteString(fmt.Sprintf("### %s\n\n", r.Task))
+			fmt.Fprintf(&sb, "### %s\n\n", r.Task)
 			if r.Error != "" {
-				sb.WriteString(fmt.Sprintf("**Error:** %s\n\n", r.Error))
+				fmt.Fprintf(&sb, "**Error:** %s\n\n", r.Error)
 			} else {
 				sb.WriteString(r.Response + "\n\n")
 			}
@@ -230,9 +230,9 @@ func mergeResults(results []swarmWorkerResult, strategy string) string {
 	default:
 		sb.WriteString("## Swarm Parallel Results\n\n")
 		for _, r := range results {
-			sb.WriteString(fmt.Sprintf("### Worker %d: %s\n\n", r.Index+1, r.Task))
+			fmt.Fprintf(&sb, "### Worker %d: %s\n\n", r.Index+1, r.Task)
 			if r.Error != "" {
-				sb.WriteString(fmt.Sprintf("**Error:** %s\n\n", r.Error))
+				fmt.Fprintf(&sb, "**Error:** %s\n\n", r.Error)
 			} else {
 				sb.WriteString(r.Response + "\n\n")
 			}

@@ -61,7 +61,7 @@ func (m *OAuthCopilot) startPolling(deviceCode string, expiresIn int) tea.Cmd {
 		token, err := copilot.PollForToken(ctx, m.deviceCode)
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil // cancelled, don't report error.
+				return nil // canceled, don't report error.
 			}
 			return ActionOAuthErrored{Error: err}
 		}

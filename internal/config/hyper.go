@@ -3,68 +3,16 @@ package config
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
-	"sync/atomic"
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	xetag "github.com/charmbracelet/x/etag"
-	"github.com/swadhinbiswas/ghost/internal/agent/hyper"
 )
 
 type hyperClient interface {
 	Get(context.Context, string) (catwalk.Provider, error)
-}
-
-type hyperSync struct {
-	cache      cache[catwalk.Provider]
-	client     hyperClient
-	autoupdate bool
-	init       atomic.Bool
-}
-
-func (s *hyperSync) Init(client hyperClient, path string, autoupdate bool) {
-	s.client = client
-	s.cache = newCache[catwalk.Provider](path)
-	s.autoupdate = autoupdate
-	s.init.Store(true)
-}
-
-func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
-	if !s.init.Load() {
-		panic("called Get before Init")
-	}
-
-	cached, etag, cachedErr := s.cache.Get()
-	if cached.ID == "" || cachedErr != nil {
-		// if cached file is empty, default to embedded provider
-		cached = hyper.Embedded()
-	}
-
-	if !s.autoupdate {
-		slog.Info("Using cached/embedded Hyper provider")
-		return cached, nil
-	}
-
-	slog.Info("Fetching Hyper provider")
-	result, err := s.client.Get(ctx, etag)
-	if errors.Is(err, context.DeadlineExceeded) {
-		slog.Warn("Hyper provider not updated in time")
-		return cached, nil
-	}
-	if errors.Is(err, catwalk.ErrNotModified) {
-		slog.Info("Hyper provider not modified")
-		return cached, nil
-	}
-	if len(result.Models) == 0 {
-		slog.Warn("Hyper did not return any models")
-		return cached, nil
-	}
-
-	return result, s.cache.Store(result)
 }
 
 var _ hyperClient = realHyperClient{}

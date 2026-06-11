@@ -429,7 +429,6 @@ func outputSessionJSON(w io.Writer, sess session.Session, msgs []*message.Messag
 }
 
 func outputSessionHuman(ctx context.Context, sess session.Session, msgs []*message.Message) error {
-
 	themeName := "Default"
 	cwd, _ := os.Getwd()
 	if cfg, err := config.Load(cwd, "", false); err == nil {

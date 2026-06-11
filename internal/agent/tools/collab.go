@@ -76,11 +76,11 @@ func NewCollabTool(hub *collab.Hub) fantasy.AgentTool {
 				sb.WriteString("Active Collaboration Rooms:\n\n")
 				for _, r := range rooms {
 					clients := r.GetClients()
-					sb.WriteString(fmt.Sprintf("- **%s** (%d participant(s))\n", r.ID, len(clients)))
+					fmt.Fprintf(&sb, "- **%s** (%d participant(s))\n", r.ID, len(clients))
 					for _, c := range clients {
-						sb.WriteString(fmt.Sprintf("  - %s", c.Name))
+						fmt.Fprintf(&sb, "  - %s", c.Name)
 						if c.Color != "" {
-							sb.WriteString(fmt.Sprintf(" [%s]", c.Color))
+							fmt.Fprintf(&sb, " [%s]", c.Color)
 						}
 						sb.WriteString("\n")
 					}
@@ -98,10 +98,10 @@ func NewCollabTool(hub *collab.Hub) fantasy.AgentTool {
 				clients := room.GetClients()
 				content := room.Document.GetContent()
 				var sb strings.Builder
-				sb.WriteString(fmt.Sprintf("Room: %s\n", params.Room))
-				sb.WriteString(fmt.Sprintf("Participants: %d\n", len(clients)))
-				sb.WriteString(fmt.Sprintf("Content length: %d characters\n", len(content)))
-				sb.WriteString(fmt.Sprintf("Version: %v\n", room.Document.GetVersion()))
+				fmt.Fprintf(&sb, "Room: %s\n", params.Room)
+				fmt.Fprintf(&sb, "Participants: %d\n", len(clients))
+				fmt.Fprintf(&sb, "Content length: %d characters\n", len(content))
+				fmt.Fprintf(&sb, "Version: %v\n", room.Document.GetVersion())
 				return fantasy.NewTextResponse(sb.String()), nil
 
 			case "share":

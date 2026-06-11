@@ -99,10 +99,10 @@ func (m *themeModel) View() tea.View {
 
 	// Title with gradient feel
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#9d80ff"))
-	s.WriteString(fmt.Sprintf("  %s\n", titleStyle.Render("👻 Ghost Theme Selector")))
+	fmt.Fprintf(&s, "  %s\n", titleStyle.Render("👻 Ghost Theme Selector"))
 
 	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	s.WriteString(fmt.Sprintf("  %s\n\n", helpStyle.Render("↑/↓ navigate • enter save • q quit")))
+	fmt.Fprintf(&s, "  %s\n\n", helpStyle.Render("↑/↓ navigate • enter save • q quit"))
 
 	for i, tName := range m.themes {
 		t := styles.GetTheme(tName)
@@ -154,7 +154,7 @@ func (m *themeModel) View() tea.View {
 			sample = fmt.Sprintf("  %s %s(%s) %s", kw, fn, str, cmt)
 		}
 
-		s.WriteString(fmt.Sprintf("%s%s %s%s%s\n", cursor, label, badgeStr, markers, sample))
+		fmt.Fprintf(&s, "%s%s %s%s%s\n", cursor, label, badgeStr, markers, sample)
 	}
 
 	s.WriteString("\n")

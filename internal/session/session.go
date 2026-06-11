@@ -26,7 +26,7 @@ const (
 // HashID returns the XXH3 hash of a session ID (UUID) as a hex string.
 func HashID(id string) string {
 	h := xxh3.New()
-	h.WriteString(id)
+	_, _ = h.WriteString(id)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 

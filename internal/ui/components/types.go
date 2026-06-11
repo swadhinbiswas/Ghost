@@ -183,7 +183,6 @@ func (c *BaseComponent) Update(msg tea.Msg) (Component, tea.Cmd) {
 type Container struct {
 	*BaseComponent
 	components []Component
-	layout     image.Rectangle
 }
 
 // NewContainer creates a new container.

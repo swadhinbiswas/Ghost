@@ -460,7 +460,7 @@ func pendingTool(sty *styles.Styles, name string, anim *anim.Anim, nested bool) 
 	return fmt.Sprintf("%s %s %s", icon, toolName, animView)
 }
 
-// toolEarlyStateContent handles error/cancelled/pending states before content rendering.
+// toolEarlyStateContent handles error/canceled/pending states before content rendering.
 // Returns the rendered output and true if early state was handled.
 func toolEarlyStateContent(sty *styles.Styles, opts *ToolRenderOpts, width int) (string, bool) {
 	var msg string
@@ -875,7 +875,7 @@ func (t *baseToolMessageItem) formatToolForCopy() string {
 		}
 	} else if t.status == ToolStatusCanceled {
 		parts = append(parts, "### Status:")
-		parts = append(parts, "Cancelled")
+		parts = append(parts, "Canceled")
 	} else {
 		parts = append(parts, "### Status:")
 		parts = append(parts, "Pending...")
@@ -1086,7 +1086,7 @@ func (t *baseToolMessageItem) formatBashResultForCopy() string {
 
 	var meta tools.BashResponseMetadata
 	if t.result.Metadata != "" {
-		json.Unmarshal([]byte(t.result.Metadata), &meta)
+		_ = json.Unmarshal([]byte(t.result.Metadata), &meta)
 	}
 
 	output := meta.Output
@@ -1109,7 +1109,7 @@ func (t *baseToolMessageItem) formatViewResultForCopy() string {
 
 	var meta tools.ViewResponseMetadata
 	if t.result.Metadata != "" {
-		json.Unmarshal([]byte(t.result.Metadata), &meta)
+		_ = json.Unmarshal([]byte(t.result.Metadata), &meta)
 	}
 
 	if meta.Content == "" {
@@ -1180,7 +1180,7 @@ func (t *baseToolMessageItem) formatEditResultForCopy() string {
 	}
 
 	var params tools.EditParams
-	json.Unmarshal([]byte(t.toolCall.Input), &params)
+	_ = json.Unmarshal([]byte(t.toolCall.Input), &params)
 
 	var result strings.Builder
 
@@ -1215,7 +1215,7 @@ func (t *baseToolMessageItem) formatMultiEditResultForCopy() string {
 	}
 
 	var params tools.MultiEditParams
-	json.Unmarshal([]byte(t.toolCall.Input), &params)
+	_ = json.Unmarshal([]byte(t.toolCall.Input), &params)
 
 	var result strings.Builder
 	if meta.OldContent != "" || meta.NewContent != "" {

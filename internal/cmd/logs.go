@@ -95,8 +95,7 @@ func followLogs(ctx context.Context, logsFile string, tailLines int) error {
 			lines = lines[len(lines)-tailLines:]
 		}
 	}
-	t.Stop()
-
+	_ = t.Stop()
 	for _, line := range lines {
 		printLogLine(line)
 	}
@@ -115,7 +114,7 @@ func followLogs(ctx context.Context, logsFile string, tailLines int) error {
 	if err != nil {
 		return fmt.Errorf("failed to tail log file: %v", err)
 	}
-	defer t.Stop()
+	defer func() { _ = t.Stop() }()
 
 	for {
 		select {
@@ -140,7 +139,7 @@ func showLogs(logsFile string, tailLines int) error {
 	if err != nil {
 		return fmt.Errorf("failed to tail log file: %v", err)
 	}
-	defer t.Stop()
+	defer func() { _ = t.Stop() }()
 
 	var lines []string
 	for line := range t.Lines {

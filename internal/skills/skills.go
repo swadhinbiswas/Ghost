@@ -124,7 +124,7 @@ func Discover(paths []string) []*Skill {
 			Follow:  true,
 			ToSlash: fastwalk.DefaultToSlash(),
 		}
-		fastwalk.Walk(&conf, base, func(path string, d os.DirEntry, err error) error {
+		_ = fastwalk.Walk(&conf, base, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return nil
 			}

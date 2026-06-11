@@ -18,7 +18,7 @@ func SyntaxHighlight(st *styles.Styles, source, fileName string, bg color.Color)
 	// Determine the language lexer to use
 	l := lexers.Match(fileName)
 	if l == nil {
-		l = lexers.Analyse(source)
+		l = lexers.Analyse(source) //nolint:misspell
 	}
 	if l == nil {
 		l = lexers.Fallback

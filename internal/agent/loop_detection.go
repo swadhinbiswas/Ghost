@@ -60,12 +60,12 @@ func getToolInteractionSignature(content fantasy.ResponseContent) string {
 		if tr, ok := resultsByID[tc.ToolCallID]; ok {
 			output = toolResultOutputString(tr.Result)
 		}
-		io.WriteString(h, tc.ToolName)
-		io.WriteString(h, "\x00")
-		io.WriteString(h, tc.Input)
-		io.WriteString(h, "\x00")
-		io.WriteString(h, output)
-		io.WriteString(h, "\x00")
+		_, _ = io.WriteString(h, tc.ToolName)
+		_, _ = io.WriteString(h, "\x00")
+		_, _ = io.WriteString(h, tc.Input)
+		_, _ = io.WriteString(h, "\x00")
+		_, _ = io.WriteString(h, output)
+		_, _ = io.WriteString(h, "\x00")
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }

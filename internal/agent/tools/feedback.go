@@ -96,16 +96,16 @@ func NewFeedbackTool(store *feedback.Store) fantasy.AgentTool {
 				stats := store.GetStats()
 				var sb strings.Builder
 				sb.WriteString("## Feedback Statistics\n\n")
-				sb.WriteString(fmt.Sprintf("**Total Feedback:** %d\n", stats.Total))
-				sb.WriteString(fmt.Sprintf("**Positive:** %d (%.1f%%)\n", stats.Positive, float64(stats.Positive)/float64(max(stats.Total, 1))*100))
-				sb.WriteString(fmt.Sprintf("**Negative:** %d (%.1f%%)\n", stats.Negative, float64(stats.Negative)/float64(max(stats.Total, 1))*100))
-				sb.WriteString(fmt.Sprintf("**Neutral:** %d\n", stats.Neutral))
-				sb.WriteString(fmt.Sprintf("**Satisfaction Rate:** %.1f%%\n", stats.SatisfactionRate))
+				fmt.Fprintf(&sb, "**Total Feedback:** %d\n", stats.Total)
+				fmt.Fprintf(&sb, "**Positive:** %d (%.1f%%)\n", stats.Positive, float64(stats.Positive)/float64(max(stats.Total, 1))*100)
+				fmt.Fprintf(&sb, "**Negative:** %d (%.1f%%)\n", stats.Negative, float64(stats.Negative)/float64(max(stats.Total, 1))*100)
+				fmt.Fprintf(&sb, "**Neutral:** %d\n", stats.Neutral)
+				fmt.Fprintf(&sb, "**Satisfaction Rate:** %.1f%%\n", stats.SatisfactionRate)
 
 				if len(stats.ByCategory) > 0 {
 					sb.WriteString("\n**By Category:**\n")
 					for cat, count := range stats.ByCategory {
-						sb.WriteString(fmt.Sprintf("- %s: %d\n", cat, count))
+						fmt.Fprintf(&sb, "- %s: %d\n", cat, count)
 					}
 				}
 
@@ -120,7 +120,7 @@ func NewFeedbackTool(store *feedback.Store) fantasy.AgentTool {
 				var sb strings.Builder
 				sb.WriteString("## Feedback Insights\n\n")
 				for _, insight := range insights {
-					sb.WriteString(fmt.Sprintf("- %s\n", insight))
+					fmt.Fprintf(&sb, "- %s\n", insight)
 				}
 				return fantasy.NewTextResponse(sb.String()), nil
 
@@ -136,22 +136,23 @@ func NewFeedbackTool(store *feedback.Store) fantasy.AgentTool {
 				}
 
 				var sb strings.Builder
-				sb.WriteString(fmt.Sprintf("## Recent Feedback (%d)\n\n", len(recent)))
+				fmt.Fprintf(&sb, "## Recent Feedback (%d)\n\n", len(recent))
 				for _, f := range recent {
 					ratingStr := "neutral"
-					if f.Rating == feedback.RatingPositive {
+					switch f.Rating {
+					case feedback.RatingPositive:
 						ratingStr = "positive"
-					} else if f.Rating == feedback.RatingNegative {
+					case feedback.RatingNegative:
 						ratingStr = "negative"
 					}
 
-					sb.WriteString(fmt.Sprintf("- [%s] %s", ratingStr, f.Timestamp.Format("2006-01-02 15:04")))
+					fmt.Fprintf(&sb, "- [%s] %s", ratingStr, f.Timestamp.Format("2006-01-02 15:04"))
 					if f.Category != "" {
-						sb.WriteString(fmt.Sprintf(" (%s)", f.Category))
+						fmt.Fprintf(&sb, " (%s)", f.Category)
 					}
 					sb.WriteString("\n")
 					if f.Comment != "" {
-						sb.WriteString(fmt.Sprintf("  Comment: %s\n", f.Comment))
+						fmt.Fprintf(&sb, "  Comment: %s\n", f.Comment)
 					}
 				}
 				return fantasy.NewTextResponse(sb.String()), nil
@@ -185,14 +186,14 @@ func FormatFeedbackForPrompt(store *feedback.Store) string {
 
 	var sb strings.Builder
 	sb.WriteString("\n<user_feedback_history>\n")
-	sb.WriteString(fmt.Sprintf("Total feedback received: %d\n", stats.Total))
-	sb.WriteString(fmt.Sprintf("Satisfaction rate: %.1f%%\n", stats.SatisfactionRate))
+	fmt.Fprintf(&sb, "Total feedback received: %d\n", stats.Total)
+	fmt.Fprintf(&sb, "Satisfaction rate: %.1f%%\n", stats.SatisfactionRate)
 
 	insights := store.GetPatternInsights()
 	if len(insights) > 0 {
 		sb.WriteString("\nPatterns identified:\n")
 		for _, insight := range insights {
-			sb.WriteString(fmt.Sprintf("- %s\n", insight))
+			fmt.Fprintf(&sb, "- %s\n", insight)
 		}
 	}
 

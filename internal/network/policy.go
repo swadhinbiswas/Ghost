@@ -1,4 +1,4 @@
-// Package network centralises Ghost's network-egress policy.
+// Package network centralizes Ghost's network-egress policy.
 //
 // Stealth mode (env GHOST_STEALTH=1) blocks every outbound call except those
 // explicitly allow-listed for the user's selected model API.

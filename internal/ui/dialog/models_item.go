@@ -104,7 +104,7 @@ func (m *ModelItem) ID() string {
 func (m *ModelItem) Render(width int) string {
 	var providerInfo string
 	if m.showProvider {
-		providerInfo = string(m.prov.Name)
+		providerInfo = m.prov.Name
 	}
 	styles := ListItemStyles{
 		ItemBlurred:     m.t.Dialog.NormalItem,

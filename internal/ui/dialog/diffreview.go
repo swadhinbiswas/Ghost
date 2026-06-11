@@ -64,7 +64,7 @@ var _ Dialog = (*DiffReview)(nil)
 // DiffReviewResult is returned when the user confirms or cancels the review.
 type DiffReviewResult struct {
 	AcceptedHunks map[string]string // filePath -> accepted diff content
-	Cancelled     bool
+	Canceled      bool
 }
 
 // NewDiffReview creates a new diff review dialog.
@@ -130,7 +130,7 @@ func (dr *DiffReview) HandleMsg(msg tea.Msg) Action {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, dr.keyMap.Close):
-			return DiffReviewResult{Cancelled: true}
+			return DiffReviewResult{Canceled: true}
 		case key.Matches(msg, dr.keyMap.Toggle):
 			dr.toggleCurrentHunk()
 			return nil
@@ -360,7 +360,7 @@ func (dr *DiffReview) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	var diffView strings.Builder
 	if idx >= 0 && idx < len(filtered) {
 		if item, ok := filtered[idx].(*diffHunkItem); ok {
-			diffView.WriteString(fmt.Sprintf("  File: %s (hunk %d)\n\n", item.filePath, item.hunkIdx+1))
+			fmt.Fprintf(&diffView, "  File: %s (hunk %d)\n\n", item.filePath, item.hunkIdx+1)
 			lines := strings.Split(item.hunk.Content, "\n")
 			for _, line := range lines {
 				if strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++") {

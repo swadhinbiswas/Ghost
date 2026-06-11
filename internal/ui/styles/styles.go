@@ -1094,7 +1094,7 @@ func DefaultStyles(themeName string) Styles {
 	s.ToolCallPending = lipgloss.NewStyle().Foreground(greenDark).SetString(ToolPending)
 	s.ToolCallError = lipgloss.NewStyle().Foreground(redDark).SetString(ToolError)
 	s.ToolCallSuccess = lipgloss.NewStyle().Foreground(green).SetString(ToolSuccess)
-	// Cancelled uses muted tone but same glyph as pending
+	// Canceled uses muted tone but same glyph as pending
 	s.ToolCallCancelled = s.Muted.SetString(ToolPending)
 	s.EarlyStateMessage = s.Subtle.PaddingLeft(2)
 

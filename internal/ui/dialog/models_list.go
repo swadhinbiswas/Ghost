@@ -260,24 +260,3 @@ func (f *ModelsList) Render() string {
 	f.SetItems(f.VisibleItems()...)
 	return f.List.Render()
 }
-
-type modelGroups []ModelGroup
-
-func (m modelGroups) Len() int {
-	n := 0
-	for _, g := range m {
-		n += len(g.Items)
-	}
-	return n
-}
-
-func (m modelGroups) String(i int) string {
-	count := 0
-	for _, g := range m {
-		if i < count+len(g.Items) {
-			return g.Items[i-count].Filter()
-		}
-		count += len(g.Items)
-	}
-	return ""
-}

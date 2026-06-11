@@ -18,6 +18,7 @@
 # Editor / tooling metadata
 .understand-anything/
 .puku-cli/
+.kiro/
 
 # OS noise
 .DS_Store

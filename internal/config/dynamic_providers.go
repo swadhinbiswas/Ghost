@@ -51,19 +51,6 @@ var openCodeDisplayNameOverrides = map[string]string{
 	"north-mini-code-free":   "North Mini Code Free",
 }
 
-// openCodeFreeModelIDs is a fallback hint set used only for offline/static
-// rendering. The authoritative free-model detection is isOpenCodeFreeModel,
-// which is applied to the live endpoint response.
-var openCodeFreeModelIDs = map[string]struct{}{
-	"big-pickle":             {},
-	"deepseek-v4-flash-free": {},
-	"mimo-v2.5-free":         {},
-	"qwen3.6-plus-free":      {},
-	"minimax-m3-free":        {},
-	"nemotron-3-ultra-free":  {},
-	"north-mini-code-free":   {},
-}
-
 // isOpenCodeFreeModel reports whether an OpenCode Zen model ID is free.
 // Free models are suffixed "-free"; "big-pickle" is a special stealth free model.
 func isOpenCodeFreeModel(id string) bool {

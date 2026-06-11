@@ -74,7 +74,7 @@ func handleList(loader *plugin.Loader) (fantasy.ToolResponse, error) {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Installed Plugins (%d):\n\n", len(plugins)))
+	fmt.Fprintf(&sb, "Installed Plugins (%d):\n\n", len(plugins))
 
 	for _, p := range plugins {
 		m := p.Manifest
@@ -82,9 +82,9 @@ func handleList(loader *plugin.Loader) (fantasy.ToolResponse, error) {
 		if !m.Loaded {
 			status = "failed"
 		}
-		sb.WriteString(fmt.Sprintf("- **%s** v%s (%s) - %s [%s]\n", m.Name, m.Version, m.Type, m.Description, status))
+		fmt.Fprintf(&sb, "- **%s** v%s (%s) - %s [%s]\n", m.Name, m.Version, m.Type, m.Description, status)
 		if m.LoadError != "" {
-			sb.WriteString(fmt.Sprintf("  Error: %s\n", m.LoadError))
+			fmt.Fprintf(&sb, "  Error: %s\n", m.LoadError)
 		}
 	}
 
@@ -112,13 +112,13 @@ func handleInfo(loader *plugin.Loader, name string) (fantasy.ToolResponse, error
 
 func formatPluginInfo(m *plugin.Manifest) fantasy.ToolResponse {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("## %s v%s\n\n", m.Name, m.Version))
-	sb.WriteString(fmt.Sprintf("**Type:** %s\n", m.Type))
-	sb.WriteString(fmt.Sprintf("**Description:** %s\n", m.Description))
-	sb.WriteString(fmt.Sprintf("**Author:** %s\n", m.Author))
-	sb.WriteString(fmt.Sprintf("**License:** %s\n", m.License))
-	sb.WriteString(fmt.Sprintf("**Homepage:** %s\n", m.Homepage))
-	sb.WriteString(fmt.Sprintf("**Status:** %s\n", func() string {
+	fmt.Fprintf(&sb, "## %s v%s\n\n", m.Name, m.Version)
+	fmt.Fprintf(&sb, "**Type:** %s\n", m.Type)
+	fmt.Fprintf(&sb, "**Description:** %s\n", m.Description)
+	fmt.Fprintf(&sb, "**Author:** %s\n", m.Author)
+	fmt.Fprintf(&sb, "**License:** %s\n", m.License)
+	fmt.Fprintf(&sb, "**Homepage:** %s\n", m.Homepage)
+	fmt.Fprintf(&sb, "**Status:** %s\n", func() string {
 		if m.LoadError != "" {
 			return "error: " + m.LoadError
 		}
@@ -126,13 +126,13 @@ func formatPluginInfo(m *plugin.Manifest) fantasy.ToolResponse {
 			return "loaded"
 		}
 		return "discovered"
-	}()))
+	}())
 
 	if len(m.Permissions.Commands) > 0 {
-		sb.WriteString(fmt.Sprintf("\n**Allowed Commands:** %s\n", strings.Join(m.Permissions.Commands, ", ")))
+		fmt.Fprintf(&sb, "\n**Allowed Commands:** %s\n", strings.Join(m.Permissions.Commands, ", "))
 	}
 	if len(m.Permissions.AllowedPaths) > 0 {
-		sb.WriteString(fmt.Sprintf("**Allowed Paths:** %s\n", strings.Join(m.Permissions.AllowedPaths, ", ")))
+		fmt.Fprintf(&sb, "**Allowed Paths:** %s\n", strings.Join(m.Permissions.AllowedPaths, ", "))
 	}
 
 	return fantasy.NewTextResponse(sb.String())

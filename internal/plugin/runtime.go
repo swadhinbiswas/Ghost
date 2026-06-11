@@ -92,7 +92,7 @@ func (r *Runtime) Execute(ctx context.Context, input string) (string, error) {
 
 	case <-timeoutCtx.Done():
 		if cmd.Process != nil {
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		}
 		return "", fmt.Errorf("plugin execution timed out after %s", r.manifest.TimeoutDuration())
 	}
@@ -143,7 +143,7 @@ func (r *Runtime) ExecuteScript(ctx context.Context, scriptPath string, args ...
 
 	case <-timeoutCtx.Done():
 		if cmd.Process != nil {
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		}
 		return "", fmt.Errorf("script timed out after %s", r.manifest.TimeoutDuration())
 	}
@@ -279,7 +279,7 @@ func (r *Runtime) Stop() {
 	r.stopped = true
 
 	if r.cmd != nil && r.cmd.Process != nil {
-		r.cmd.Process.Kill()
+		_ = r.cmd.Process.Kill()
 	}
 
 	close(r.done)

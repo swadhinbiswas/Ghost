@@ -211,7 +211,7 @@ func (c *Client) registerHandlers() {
 func (c *Client) Restart() error {
 	var openFiles []string
 	for uri := range c.openFiles.Seq2() {
-		openFiles = append(openFiles, string(uri))
+		openFiles = append(openFiles, uri)
 	}
 
 	closeCtx, cancel := context.WithTimeout(c.ctx, 10*time.Second)

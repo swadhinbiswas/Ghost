@@ -436,7 +436,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		},
 		StopWhen: []fantasy.StopCondition{
 			func(_ []fantasy.StepResult) bool {
-				cw := int64(largeModel.CatwalkCfg.ContextWindow)
+				cw := largeModel.CatwalkCfg.ContextWindow
 				tokens := currentSession.CompletionTokens + currentSession.PromptTokens
 				remaining := cw - tokens
 				var threshold int64
@@ -468,7 +468,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		// Ensure we finish thinking on error to close the reasoning state.
 		currentAssistant.FinishThinking()
 		toolCalls := currentAssistant.ToolCalls()
-		// INFO: we use the parent context here because the genCtx has been cancelled.
+		// INFO: we use the parent context here because the genCtx has been canceled.
 		msgs, createErr := a.messages.List(ctx, currentAssistant.SessionID)
 		if createErr != nil {
 			return nil, createErr
@@ -503,7 +503,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			}
 			content := "There was an error while executing the tool"
 			if isCancelErr {
-				content = "Error: user cancelled assistant tool calling"
+				content = "Error: user canceled assistant tool calling"
 			} else if isPermissionErr {
 				content = "User denied permission"
 			}
@@ -553,7 +553,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			currentAssistant.AddFinish(message.FinishReasonError, defaultTitle, err.Error())
 		}
 		// Note: we use the parent context here because the genCtx has been
-		// cancelled.
+		// canceled.
 		updateErr := a.messages.Update(ctx, *currentAssistant)
 		if updateErr != nil {
 			return nil, updateErr
@@ -680,7 +680,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	if err != nil {
 		isCancelErr := errors.Is(err, context.Canceled)
 		if isCancelErr {
-			// User cancelled summarize we need to remove the summary message.
+			// User canceled summarize we need to remove the summary message.
 			deleteErr := a.messages.Delete(ctx, summaryMessage.ID)
 			return deleteErr
 		}
@@ -769,7 +769,7 @@ If not, please feel free to ignore. Again do not mention this message to the use
 		if len(m.Parts) == 0 {
 			continue
 		}
-		// Assistant message without content or tool calls (cancelled before it
+		// Assistant message without content or tool calls (canceled before it
 		// returned anything).
 		if m.Role == message.Assistant && len(m.ToolCalls()) == 0 && m.Content().Text == "" && m.ReasoningContent().String() == "" {
 			continue
