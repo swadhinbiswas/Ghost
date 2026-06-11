@@ -1,122 +1,151 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/swadhinbiswas/ghost/main/internal/cmd/stats/header.svg" width="600" alt="Ghost CLI Logo">
+<img src="https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/internal/cmd/stats/header.svg" width="600" alt="Ghost CLI Logo">
 
 <p align="center">
   <br>
-  <b>A lightning-fast, highly aesthetic AI assistant living right in your terminal.</b>
+  <b>👻 A lightning-fast, beautiful AI assistant that lives in your terminal — powered by free models.</b>
   <br>
 </p>
 
-[![Go Release](https://img.shields.io/github/actions/workflow/status/swadhinbiswas/ghost/release.yml?style=flat-square&logo=github&label=Release)](https://github.com/swadhinbiswas/ghost/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square&logo=opensourceinitiative)](https://opensource.org/licenses/MIT)
-[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-00ADD8?style=flat-square&logo=go)](https://golang.org/)
+[![Go Release](https://img.shields.io/github/actions/workflow/status/swadhinbiswas/Ghost/release.yml?style=flat-square&logo=github&label=Release)](https://github.com/swadhinbiswas/Ghost/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-bd93f9.svg?style=flat-square&logo=opensourceinitiative)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.26-00ADD8?style=flat-square&logo=go)](https://golang.org/)
 
 </div>
 
 ---
 
-<div align="center">
-  <img src="demo.gif" alt="Ghost CLI Terminal Recording Demo" width="800">
-  <br>
-  <em>(See Ghost in action above!)</em>
-</div>
+Hey there! 👋 Welcome to **Ghost** — a terminal-based AI assistant built to be fast, beautiful, and free.
 
----
+Ghost ships pre-configured with generous **free** AI providers, so you can get world-class answers, code suggestions, and command help without entering a credit card. If you live in the terminal and want instant help without alt-tabbing to a browser, Ghost is for you.
 
-Hey there! 👋 Welcome to Ghost. 
-
-I wanted a terminal-based AI assistant that was not only incredibly fast and useful but also beautiful to look at. More importantly, I wanted to build something that runs entirely on the best **free** AI models out there. No subscriptions, no hidden API costs, just pure productivity right from your command line.
-
-If you spend a lot of your day in the terminal and want instant answers, code suggestions, or help running commands without constantly alt-tabbing to a browser, Ghost is for you.
+> **Note on UI:** Ghost's interface is built on the foundation of [**Crush**](https://github.com/charmbracelet/crush) by [Charm](https://charm.sh/). Huge thanks to the Charm team for the gorgeous terminal toolkit.
 
 <br>
 
-## <img src="https://raw.githubusercontent.com/FortAwesome/Heroicons/master/optimized/24/outline/sparkles.svg" width="24" height="24" align="bottom"> Why use Ghost?
+## ✨ Why Ghost?
 
-- **It's 100% Free:** I built this to exclusively use top-tier free providers. You get access to world-class models without ever entering a credit card.
-- **Works Everywhere:** It's a native Go application. Whether you're on Linux, macOS, or Windows, Ghost runs perfectly.
-- **Beautiful Interface:** The terminal doesn't have to be boring. Ghost features a stunning, highly responsive UI. Huge shoutout to **Crush from Charm** for the foundational UI template that makes Ghost look so good!
-- **Drop-in Proxies:** It natively connects to OpenCode Zen, GitHub Copilot, Groq, Nvidia NIM, Cerebras, and the free-tier on OpenRouter.
-
-<br>
-
-## <img src="https://raw.githubusercontent.com/FortAwesome/Heroicons/master/optimized/24/outline/cpu-chip.svg" width="24" height="24" align="bottom"> Models out of the box
-
-Ghost comes pre-configured with endpoints that give you generous free tiers:
-
-* **Google Gemini:** `Gemini 1.5 Pro` and `Gemini 1.5 Flash`
-* **Nvidia NIM:** `DeepSeek R1`, `Llama 3.3 70B`, `Gemma 3`, `QwQ 32B`, and tons more!
-* **Cerebras:** Instantaneous `Llama 3.1 8B` and `70B` inference.
-* **GitHub Copilot:** Got a Copilot subscription? Ghost uses it as a proxy for `GPT-4o` and `Claude 3.5 Sonnet`.
-* **Groq:** LPU-accelerated `Llama 3.1` and `Mixtral`.
-* **OpenCode Zen:** Amazing free coding models like `Big Pickle`, `Qwen 3.6 Plus Free`, and `MiMo V2`.
-* **OpenRouter:** Taps into community-provided free models like `Llama 3.1 8B Free` and `Gemma 2 9B Free`.
+- **Free out of the box.** Pre-wired to free providers — no subscription, no API key required to get started.
+- **Cross-platform.** A single native Go binary for Linux, macOS, and Windows (amd64 + arm64).
+- **Beautiful TUI.** A responsive, themeable terminal interface (Dracula theme included).
+- **Bring your own keys.** Optionally connect paid/keyed providers like Google Gemini, Groq, Cerebras, GitHub Copilot, and OpenRouter through the built-in [Catwalk](https://github.com/charmbracelet/catwalk) registry.
 
 <br>
 
-## <img src="https://raw.githubusercontent.com/FortAwesome/Heroicons/master/optimized/24/outline/rocket-launch.svg" width="24" height="24" align="bottom"> Getting Started
+## 🧠 Models out of the box
 
-### The fast way (Mac & Linux)
+These providers work with **no API key required**:
 
-Just run this one-liner in your terminal. It detects your OS and architecture and drops the latest release into `/usr/local/bin`.
+| Provider | Models | Notes |
+| --- | --- | --- |
+| **OpenCode Zen** | `Big Pickle`, `DeepSeek V4 Flash Free`, `Xiaomi MiMo V2.5 Free`, `Qwen 3.6 Plus Free`, `Nemotron 3 Super Free` | Free tier, no key needed |
+| **OI VSCode Server** | `MiniMax M2.7 (thinking)` | Free, no key needed |
+
+Add a key to unlock more:
+
+| Provider | How to enable | Example models |
+| --- | --- | --- |
+| **Nvidia NIM** | set `NVIDIA_API_KEY` | `Nemotron 3 Ultra`, `DeepSeek V4 Pro/Flash`, `GLM 5.1`, `Kimi K2.6`, `Qwen 3.5`, `Mistral Medium 3.5`, `Step 3.7 Flash`, `MiniMax M2.7`, `DiffusionGemma` |
+| **Google Gemini / Groq / Cerebras / Copilot / OpenRouter** | `ghost login` (via Catwalk registry) | provider-specific |
+
+> Model availability is curated by each provider and may change over time.
+
+<br>
+
+## 🚀 Getting Started
+
+### The fast way (macOS & Linux)
+
+Detects your OS/architecture and installs the latest release to `/usr/local/bin`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/swadhinbiswas/ghost/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/install.sh | bash
 ```
 
-### Manual Download (Windows, Mac, Linux)
+### Manual download (Windows, macOS, Linux)
 
-If you prefer doing things yourself or you're on Windows:
-1. Head over to the [Releases Page](https://github.com/swadhinbiswas/ghost/releases).
-2. Grab the archive (`.tar.gz` for Mac/Linux, `.zip` for Windows) that matches your system.
-3. Extract it and drop the `ghost` executable somewhere in your `PATH`.
+1. Go to the [Releases page](https://github.com/swadhinbiswas/Ghost/releases).
+2. Download the archive for your system (`.tar.gz` for macOS/Linux, `.zip` for Windows).
+3. Extract it and move the `ghost` binary somewhere on your `PATH`.
 
 ### Build from source
 
-Got Go 1.21 or higher installed? You can build it directly:
+Requires **Go 1.26 or newer**:
 
 ```bash
-git clone https://github.com/swadhinbiswas/ghost.git
-cd ghost
+git clone https://github.com/swadhinbiswas/Ghost.git
+cd Ghost
 go build -o ghost ./main.go
 sudo mv ghost /usr/local/bin/
 ```
 
 <br>
 
-## <img src="https://raw.githubusercontent.com/FortAwesome/Heroicons/master/optimized/24/outline/command-line.svg" width="24" height="24" align="bottom"> How to use it
+## 💻 Usage
 
-To start an interactive chat session, just type:
+Start an interactive chat session:
 
 ```bash
 ghost
 ```
 
-Need to run a quick one-off command without entering the full UI? Use the `run` command:
+Run a one-off prompt without entering the full UI:
 
 ```bash
-ghost run "Write a quick python script to parse a CSV file"
+ghost run "Write a python script to parse a CSV file"
 ```
 
-To see everything Ghost can do:
+Other handy commands:
 
 ```bash
-ghost --help
+ghost free                 # pick a free model to chat with
+ghost models               # list available models
+ghost login                # add credentials for keyed providers
+ghost theme                # switch the TUI theme
+ghost update-providers     # refresh the provider registry
+ghost session              # manage saved sessions
+ghost --help               # see everything Ghost can do
 ```
 
 <br>
 
-## <img src="https://raw.githubusercontent.com/FortAwesome/Heroicons/master/optimized/24/outline/heart.svg" width="24" height="24" align="bottom"> Acknowledgments & Credits
+## 📚 Documentation & Website
 
-Ghost wouldn't be possible without these amazing projects and people:
+The marketing site and full documentation live in [`site/`](site/) and are built with [Astro](https://astro.build/) (using [Bun](https://bun.sh/)).
 
-- **UI & Aesthetics:** A massive thank you to **Crush** from the [Charm](https://charm.sh/) team. Their incredible UI template gave Ghost its gorgeous look and feel. 
-- **The Charm Ecosystem:** Built heavily on `lipgloss`, `bubbletea`, and `catwalk` for robust terminal rendering.
-- **Free Providers:** Thank you to Google, Nvidia, Groq, Cerebras, and the OpenCode community for democratizing access to top-tier AI models.
+```bash
+cd site
+bun install
+bun run dev      # local preview at http://localhost:4321
+bun run build    # static build into site/dist
+```
 
 <br>
 
-## <img src="https://raw.githubusercontent.com/FortAwesome/Heroicons/master/optimized/24/outline/document-text.svg" width="24" height="24" align="bottom"> License
+## 🛠️ Configuration
 
-Ghost is open-source software licensed under the [MIT License](LICENSE). Feel free to fork it, mod it, and make it your own!
+Ghost reads JSON config from standard locations (`$XDG_CONFIG_HOME/ghost/ghost.json` or `~/.config/ghost/ghost.json`). A few useful environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `GHOST_DISABLE_PROVIDER_AUTO_UPDATE` | Disable automatic provider/model refresh |
+| `GHOST_DISABLE_DEFAULT_PROVIDERS` | Skip all built-in providers (BYO only) |
+| `NVIDIA_API_KEY` | Enable the Nvidia NIM provider |
+| `GHOST_NVIDIA_NIM_MODELS_URL` | Override the remote Nvidia NIM model catalog URL |
+| `GHOST_OPENCODE_MODELS_URL` | Override the OpenCode Zen models endpoint |
+
+On startup, Ghost refreshes the OpenCode Zen and Nvidia NIM model lists in the background (non-blocking) and caches them for the next session. This honors `GHOST_DISABLE_PROVIDER_AUTO_UPDATE`. The Nvidia NIM catalog is sourced from [`nvidia_nim_models.json`](nvidia_nim_models.json) at the repo root and fetched from its GitHub raw URL, so the model list can be updated without a new release. Run `ghost update-providers` to refresh on demand.
+
+<br>
+
+## 🙏 Acknowledgments
+
+- **UI foundation:** [Crush](https://github.com/charmbracelet/crush) and the [Charm](https://charm.sh/) ecosystem (`lipgloss`, `bubbletea`, `catwalk`).
+- **Free providers:** OpenCode Zen, the OI VSCode community, Nvidia, and everyone democratizing access to great AI models.
+
+<br>
+
+## 📄 License
+
+Ghost is open-source software licensed under the [MIT License](LICENSE). Fork it, mod it, make it your own.
