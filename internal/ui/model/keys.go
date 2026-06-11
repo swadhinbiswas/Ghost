@@ -35,6 +35,7 @@ type KeyMap struct {
 		Redo           key.Binding
 		Compact        key.Binding
 		Share          key.Binding
+		Unshare        key.Binding
 		Export         key.Binding
 		Thinking       key.Binding
 		PillLeft       key.Binding
@@ -108,8 +109,8 @@ func DefaultKeyMap() KeyMap {
 	}
 
 	km.Editor.AddFile = key.NewBinding(
-		key.WithKeys("/"),
-		key.WithHelp("/", "add file"),
+		key.WithKeys("ctrl+a"),
+		key.WithHelp("ctrl+a", "add file"),
 	)
 	km.Editor.SendMessage = key.NewBinding(
 		key.WithKeys("enter"),
@@ -204,6 +205,10 @@ func DefaultKeyMap() KeyMap {
 	km.Chat.Share = key.NewBinding(
 		key.WithKeys("ctrl+y"),
 		key.WithHelp("ctrl+y", "share"),
+	)
+	km.Chat.Unshare = key.NewBinding(
+		key.WithKeys("ctrl+shift+u"),
+		key.WithHelp("ctrl+shift+u", "unshare"),
 	)
 	km.Chat.Export = key.NewBinding(
 		key.WithKeys("ctrl+e"),

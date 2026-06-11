@@ -51,19 +51,21 @@ type BlockFunc func(args []string) bool
 
 // Shell provides cross-platform shell execution with optional state persistence
 type Shell struct {
-	env        []string
-	cwd        string
-	mu         sync.Mutex
-	logger     Logger
-	blockFuncs []BlockFunc
+	mu             sync.Mutex
+	cwd            string
+	env            []string
+	logger         Logger
+	blockFuncs     []BlockFunc
+	sandboxManager *SandboxManager
 }
 
 // Options for creating a new shell
 type Options struct {
-	WorkingDir string
-	Env        []string
-	Logger     Logger
-	BlockFuncs []BlockFunc
+	WorkingDir     string
+	Env            []string
+	Logger         Logger
+	BlockFuncs     []BlockFunc
+	SandboxManager *SandboxManager
 }
 
 // NewShell creates a new shell instance with the given options
@@ -96,10 +98,11 @@ func NewShell(opts *Options) *Shell {
 	}
 
 	return &Shell{
-		cwd:        cwd,
-		env:        env,
-		logger:     logger,
-		blockFuncs: opts.BlockFuncs,
+		cwd:            cwd,
+		env:            env,
+		logger:         logger,
+		blockFuncs:     opts.BlockFuncs,
+		sandboxManager: opts.SandboxManager,
 	}
 }
 
@@ -268,6 +271,10 @@ func (s *Shell) updateShellFromRunner(runner *interp.Runner) {
 
 // execCommon is the shared implementation for executing commands
 func (s *Shell) execCommon(ctx context.Context, command string, stdout, stderr io.Writer) (err error) {
+	if s.sandboxManager != nil {
+		return s.sandboxManager.ExecStream(ctx, command, stdout, stderr)
+	}
+
 	var runner *interp.Runner
 	defer func() {
 		if r := recover(); r != nil {

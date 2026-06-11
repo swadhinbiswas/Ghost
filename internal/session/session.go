@@ -72,6 +72,7 @@ type Service interface {
 	List(ctx context.Context) ([]Session, error)
 	Save(ctx context.Context, session Session) (Session, error)
 	UpdateTitleAndUsage(ctx context.Context, sessionID, title string, promptTokens, completionTokens int64, cost float64) error
+	SetCleanupFunc(fn func(string)) // optional callback to clean up resources (e.g., collab rooms)
 	SetShared(ctx context.Context, sessionID string, shared bool) error
 	Rename(ctx context.Context, id string, title string) error
 	Delete(ctx context.Context, id string) error
@@ -84,8 +85,14 @@ type Service interface {
 
 type service struct {
 	*pubsub.Broker[Session]
-	db *sql.DB
-	q  *db.Queries
+	db          *sql.DB
+	q           *db.Queries
+	cleanupRoom func(sessionID string) // optional callback to clean up collab rooms
+}
+
+// SetCleanupFunc sets an optional callback invoked when a session is deleted.
+func (s *service) SetCleanupFunc(fn func(string)) {
+	s.cleanupRoom = fn
 }
 
 func (s *service) Create(ctx context.Context, title string) (Session, error) {
@@ -329,6 +336,18 @@ func NewService(q *db.Queries, conn *sql.DB) Service {
 		Broker: broker,
 		db:     conn,
 		q:      q,
+	}
+}
+
+// NewServiceWithCleanup creates a session service with a cleanup callback
+// invoked when sessions are deleted (e.g., to clean up collab rooms).
+func NewServiceWithCleanup(q *db.Queries, conn *sql.DB, cleanup func(string)) Service {
+	broker := pubsub.NewBroker[Session]()
+	return &service{
+		Broker:      broker,
+		db:          conn,
+		q:           q,
+		cleanupRoom: cleanup,
 	}
 }
 

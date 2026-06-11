@@ -3,6 +3,7 @@ package collab
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -321,6 +322,7 @@ func (r *Room) GetClients() []*Client {
 func (r *Room) Broadcast(senderID string, msg interface{}) {
 	data, err := json.Marshal(msg)
 	if err != nil {
+		slog.Error("Failed to marshal broadcast message", "error", err, "room", r.ID)
 		return
 	}
 
@@ -334,7 +336,7 @@ func (r *Room) Broadcast(senderID string, msg interface{}) {
 		select {
 		case client.Send <- data:
 		default:
-			// Client send buffer full, skip
+			slog.Warn("Client send buffer full, dropping message", "client", id, "room", r.ID)
 		}
 	}
 }
@@ -357,7 +359,11 @@ func (r *Room) ApplyAndBroadcast(op Operation) error {
 	return nil
 }
 
-func mustMarshal(v interface{}) json.RawMessage {
-	data, _ := json.Marshal(v)
+func mustMarshal(v interface{}) []byte {
+	data, err := json.Marshal(v)
+	if err != nil {
+		slog.Error("Failed to marshal message", "error", err)
+		return nil
+	}
 	return data
 }

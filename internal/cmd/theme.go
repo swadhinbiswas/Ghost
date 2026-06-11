@@ -160,4 +160,3 @@ func (m *themeModel) View() tea.View {
 	s.WriteString("\n")
 	return tea.NewView(s.String())
 }
-

@@ -1779,6 +1779,13 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 				return true
 			}
+		case key.Matches(msg, m.keyMap.Chat.Unshare):
+			if m.state == uiChat && m.hasSession() {
+				if cmd := m.handleUnshare(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
 		case key.Matches(msg, m.keyMap.Chat.Export):
 			if m.state == uiChat && m.hasSession() {
 				if cmd := m.handleExport(); cmd != nil {
@@ -3989,15 +3996,22 @@ func (m *UI) handleShare() tea.Cmd {
 		return util.ReportWarn("Collaboration is unavailable")
 	}
 
-	room := hub.GetOrCreateRoom(m.session.ID)
-	shareURL := collab.ShareURL(m.com.Config().Options.CollabShareURL, room.ID)
+	// Only compute the URL eagerly; room creation is deferred to the async
+	// closure so it is rolled back if SetShared fails.
+	shareURL := collab.ShareURL(m.com.Config().Options.CollabShareURL, m.session.ID)
 
 	return func() tea.Msg {
+		// Persist shared state first.
 		if err := m.com.App.Sessions.SetShared(context.Background(), m.session.ID, true); err != nil {
 			return util.ReportError(err)()
 		}
+
+		// Only create the room after shared state is confirmed.
+		room := hub.GetOrCreateRoom(m.session.ID)
+		_ = room // room is available for WebSocket collaborators now
+
 		m.copyTextToClipboard(shareURL)
-		return util.NewInfoMsg("Session shared! Room URL: " + shareURL)
+		return util.NewInfoMsg("Session shared! Room URL copied to clipboard: " + shareURL)
 	}
 }
 
@@ -4027,11 +4041,38 @@ func (m *UI) handleExport() tea.Cmd {
 	}
 
 	return func() tea.Msg {
-		// Export session to markdown
-		content := m.exportSessionToMarkdown()
+		// Fetch full message history for the session
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-		// Create temp file
-		tmpFile, err := os.CreateTemp("", "ghost-export-*.md")
+		messages, err := m.com.App.Messages.List(ctx, m.session.ID)
+		if err != nil {
+			return util.ReportWarn("Export failed: " + err.Error())
+		}
+
+		// Limit to most recent 2000 messages for performance
+		const maxExportMessages = 2000
+		if len(messages) > maxExportMessages {
+			messages = messages[len(messages)-maxExportMessages:]
+		}
+
+		// Also limit by total file size to prevent OOM on very large histories.
+		content := m.exportSessionToMarkdown(messages)
+		const maxExportSize = 1 << 20 // 1 MB
+		if len(content) > maxExportSize {
+			// Truncate by dropping the oldest messages until we fit.
+			for len(messages) > 1 && len(content) > maxExportSize {
+				messages = messages[1:]
+				content = m.exportSessionToMarkdown(messages)
+			}
+			if len(content) > maxExportSize {
+				content = content[:maxExportSize]
+				content += "\n\n... (export truncated due to size limit) ..."
+			}
+		}
+
+		// Create temp file in proper temp directory
+		tmpFile, err := os.CreateTemp(os.TempDir(), "ghost-export-*.md")
 		if err != nil {
 			return util.ReportWarn("Export failed: " + err.Error())
 		}
@@ -4042,10 +4083,11 @@ func (m *UI) handleExport() tea.Cmd {
 		}
 
 		// Open in editor
-		editorCmd := exec.Command(os.Getenv("EDITOR"), tmpFile.Name())
-		if os.Getenv("EDITOR") == "" {
-			editorCmd = exec.Command("vi", tmpFile.Name())
+		editor := os.Getenv("EDITOR")
+		if editor == "" {
+			editor = "vi"
 		}
+		editorCmd := exec.Command(editor, tmpFile.Name())
 		editorCmd.Stdin = os.Stdin
 		editorCmd.Stdout = os.Stdout
 		editorCmd.Stderr = os.Stderr
@@ -4054,7 +4096,11 @@ func (m *UI) handleExport() tea.Cmd {
 			return util.ReportWarn("Editor error: " + err.Error())
 		}
 
-		return util.NewInfoMsg("Session exported to markdown")
+		msg := fmt.Sprintf("Session exported to markdown (%d messages)", len(messages))
+		if len(messages) == maxExportMessages {
+			msg += " (truncated)"
+		}
+		return util.NewInfoMsg(msg)
 	}
 }
 
@@ -4139,10 +4185,12 @@ func (m *UI) openConnectDialog() tea.Cmd {
 	return m.openModelsDialog()
 }
 
-// copyTextToClipboard copies text to system clipboard
-func (m *UI) copyTextToClipboard(text string) {
+// copyTextToClipboard copies text to system clipboard.
+// Returns true if clipboard was successfully written.
+func (m *UI) copyTextToClipboard(text string) bool {
 	// Use OSC 52 escape sequence for clipboard copy
-	fmt.Printf("\033]52;c;%s\007", text)
+	n, err := fmt.Printf("\033]52;c;%s\007", text)
+	return err == nil && n > 0
 }
 
 // updateTerminalTitle updates the terminal window title with current session info
@@ -4253,17 +4301,61 @@ func (m *UI) switchToModel(modelStr string) {
 	m.status.SetInfoMsg(util.NewInfoMsg(fmt.Sprintf("Switched to %s", modelStr)))
 }
 
-// exportSessionToMarkdown exports the current session to markdown format
-func (m *UI) exportSessionToMarkdown() string {
+// exportSessionToMarkdown exports the current session to markdown format,
+// including full message history.
+func (m *UI) exportSessionToMarkdown(messages []message.Message) string {
 	var sb strings.Builder
 
 	sb.WriteString("# Session: " + m.session.Title + "\n\n")
-	sb.WriteString("Date: " + time.Unix(m.session.CreatedAt, 0).Format("2006-01-02 15:04:05") + "\n\n")
+	sb.WriteString("Created: " + time.Unix(m.session.CreatedAt, 0).Format("2006-01-02 15:04:05") + "\n")
+	sb.WriteString("Updated: " + time.Unix(m.session.UpdatedAt, 0).Format("2006-01-02 15:04:05") + "\n")
+	sb.WriteString("Status: " + map[bool]string{true: "Shared", false: "Private"}[m.session.Shared] + "\n\n")
 	sb.WriteString("---\n\n")
 
-	// Simple export - just note that full message export requires database access
-	sb.WriteString("Session ID: " + m.session.ID + "\n\n")
-	sb.WriteString("*Full message export requires database access*\n")
+	for i, msg := range messages {
+		role := strings.ToUpper(string(msg.Role))
+		content := msg.Content().Text
+
+		// Include reasoning content if present
+		if rc := msg.ReasoningContent(); rc.Thinking != "" {
+			sb.WriteString("## " + role + " (thinking)\n\n")
+			sb.WriteString(rc.Thinking + "\n\n")
+		} else {
+			sb.WriteString("## " + role + "\n\n")
+		}
+
+		// Include tool calls and results
+		for _, tc := range msg.ToolCalls() {
+			sb.WriteString(fmt.Sprintf("Tool: **%s** (ID: %s)\nInput: %s\n\n", tc.Name, tc.ID, tc.Input))
+		}
+		for _, tr := range msg.ToolResults() {
+			if tr.IsError {
+				sb.WriteString(fmt.Sprintf("Tool result error: %s\n\n", tr.Content))
+			} else {
+				sb.WriteString(fmt.Sprintf("Tool result: %s\n\n", tr.Content))
+			}
+		}
+
+		// Include text content
+		if content != "" {
+			sb.WriteString(content + "\n\n")
+		}
+
+		// Include images
+		for _, img := range msg.ImageURLContent() {
+			sb.WriteString(fmt.Sprintf("![image](%s)\n\n", img.URL))
+		}
+
+		// Separator between messages (except after last)
+		if i < len(messages)-1 {
+			sb.WriteString("---\n\n")
+		}
+	}
+
+	sb.WriteString("---\n\n")
+	sb.WriteString("*Session ID: " + m.session.ID + "*\n")
+	sb.WriteString("*Total messages: " + fmt.Sprintf("%d", len(messages)) + "*\n")
+	sb.WriteString("*Total cost: $" + fmt.Sprintf("%.4f", m.session.Cost) + "*\n")
 
 	return sb.String()
 }

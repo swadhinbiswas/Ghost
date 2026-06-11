@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/swadhinbiswas/ghost/internal/config"
-	"github.com/swadhinbiswas/ghost/internal/csync"
-	"github.com/swadhinbiswas/ghost/internal/fsext"
 	powernapconfig "github.com/charmbracelet/x/powernap/pkg/config"
 	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
 	"github.com/sourcegraph/jsonrpc2"
+	"github.com/swadhinbiswas/ghost/internal/config"
+	"github.com/swadhinbiswas/ghost/internal/csync"
+	"github.com/swadhinbiswas/ghost/internal/fsext"
 )
 
 var unavailable = csync.NewMap[string, struct{}]()

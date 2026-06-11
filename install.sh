@@ -4,7 +4,7 @@ set -e
 # Ghost Installation Script
 # This script downloads the latest release of Ghost and installs it to /usr/local/bin
 
-REPO="swadhinbiswas/ghost"
+REPO="swadhinbiswas/Ghost"
 BIN_DIR="/usr/local/bin"
 
 # Detect OS

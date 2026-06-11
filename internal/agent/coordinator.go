@@ -500,6 +500,7 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		Messages:             c.messages,
 		Tools:                nil,
 		Notify:               c.notify,
+		Config:               c.cfg,
 	})
 
 	c.readyWg.Go(func() error {
@@ -555,6 +556,10 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 	pluginTools := c.buildPluginTools()
 	allTools = append(allTools, pluginTools...)
 
+	// Register plugin agents
+	pluginAgents := c.buildPluginAgents(ctx)
+	allTools = append(allTools, pluginAgents...)
+
 	allTools = append(allTools,
 		tools.NewFetchTool(c.permissions, c.cfg.WorkingDir(), nil),
 		tools.NewGlobTool(c.cfg.WorkingDir()),
@@ -570,7 +575,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 	planMode := c.cfg.Config().Options.TUI != nil && c.cfg.Config().Options.TUI.PlanMode
 	if !planMode {
 		allTools = append(allTools,
-			tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.Attribution, modelName),
+			tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options, modelName),
 			tools.NewJobOutputTool(),
 			tools.NewJobKillTool(),
 			tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil),
@@ -811,10 +816,6 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 	opts := []openaicompat.Option{
 		openaicompat.WithBaseURL(baseURL),
 	}
-	if apiKey != "" {
-		opts = append(opts, openaicompat.WithAPIKey(apiKey))
-	}
-
 	// Set HTTP client based on provider and debug mode.
 	var httpClient *http.Client
 	if providerID == string(catwalk.InferenceProviderCopilot) {
@@ -822,7 +823,26 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 		httpClient = copilot.NewClient(isSubAgent, c.cfg.Config().Options.Debug)
 	} else if c.cfg.Config().Options.Debug {
 		httpClient = log.NewHTTPClient()
+	} else {
+		httpClient = &http.Client{}
 	}
+
+	if apiKey == "no-key-needed" {
+		if httpClient.Transport == nil {
+			httpClient.Transport = http.DefaultTransport
+		}
+		httpClient.Transport = &headerStrippingTransport{
+			Transport: httpClient.Transport,
+			Headers:   []string{"Authorization"},
+		}
+		// Reset apiKey so we don't pass 'no-key-needed' literally
+		apiKey = ""
+	}
+
+	if apiKey != "" {
+		opts = append(opts, openaicompat.WithAPIKey(apiKey))
+	}
+
 	if httpClient != nil {
 		opts = append(opts, openaicompat.WithHTTPClient(httpClient))
 	}
@@ -974,6 +994,32 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 				providerCfg.ExtraBody = map[string]any{}
 			}
 			providerCfg.ExtraBody["tool_stream"] = true
+		}
+		if providerCfg.ID == "opencode" || providerCfg.ID == "opencode-zen" {
+			headers["User-Agent"] = "OpenCode/1.0.0"
+			headers["X-Client-Name"] = "OpenCode"
+			if providerCfg.ExtraBody == nil {
+				providerCfg.ExtraBody = map[string]any{}
+			}
+			if model.Model == "nemotron-3-super-free" {
+				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"enable_thinking": true}
+				providerCfg.ExtraBody["reasoning_budget"] = 16384
+			} else if model.Model == "deepseek-v4-flash-free" || model.Model == "big-pickle" {
+				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"thinking": true, "reasoning_effort": "high"}
+			}
+		}
+		if providerCfg.ID == "nvidia-nim" {
+			if providerCfg.ExtraBody == nil {
+				providerCfg.ExtraBody = map[string]any{}
+			}
+			if model.Model == "nvidia/nemotron-3-ultra-550b-a55b" || model.Model == "nvidia/nemotron-3-super-120b-a12b" {
+				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"enable_thinking": true}
+				providerCfg.ExtraBody["reasoning_budget"] = 16384
+			} else if model.Model == "deepseek-ai/deepseek-v4-flash" {
+				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"thinking": true, "reasoning_effort": "high"}
+			} else if model.Model == "google/gemma-4-31b-it" {
+				providerCfg.ExtraBody["chat_template_kwargs"] = map[string]any{"enable_thinking": true}
+			}
 		}
 		return c.buildOpenaiCompatProvider(baseURL, apiKey, headers, providerCfg.ExtraBody, providerCfg.ID, isSubAgent)
 	case hyper.Name:
@@ -1326,4 +1372,104 @@ func (c *coordinator) buildPluginTools() []fantasy.AgentTool {
 	}
 
 	return tools
+}
+
+// buildPluginAgents creates agent tools from loaded agent-type plugins.
+func (c *coordinator) buildPluginAgents(ctx context.Context) []fantasy.AgentTool {
+	if c.pluginLoader == nil {
+		return nil
+	}
+
+	agentPlugins := c.pluginLoader.GetAgents()
+	if len(agentPlugins) == 0 {
+		return nil
+	}
+
+	var agentTools []fantasy.AgentTool
+	for _, p := range agentPlugins {
+		if p.Manifest.AgentDef == nil {
+			continue
+		}
+
+		ad := p.Manifest.AgentDef
+
+		// Create agent config
+		agentCfg := config.Agent{
+			ID:           ad.Name,
+			Name:         ad.Name,
+			Description:  ad.Description,
+			Model:        config.SelectedModelTypeLarge,
+			AllowedTools: ad.Tools,
+		}
+		if strings.ToLower(ad.Model) == "small" {
+			agentCfg.Model = config.SelectedModelTypeSmall
+		}
+
+		// Create system prompt template
+		promptTemplate, err := prompt.NewPrompt(ad.Name, ad.SystemPrompt, prompt.WithWorkingDir(c.cfg.WorkingDir()))
+		if err != nil {
+			slog.Warn("Failed to create custom agent prompt", "agent", ad.Name, "error", err)
+			continue
+		}
+
+		// Build agent
+		subAgent, err := c.buildAgent(ctx, promptTemplate, agentCfg, true)
+		if err != nil {
+			slog.Warn("Failed to build custom agent", "agent", ad.Name, "error", err)
+			continue
+		}
+
+		// Store in our agents map
+		c.agents[ad.Name] = subAgent
+
+		// Register as a ParallelAgentTool
+		toolName := "agent_" + ad.Name
+		toolDescription := ad.Description + "\n\nUse this tool to delegate tasks to the specialized '" + ad.Name + "' agent."
+
+		tool := fantasy.NewParallelAgentTool(
+			toolName,
+			toolDescription,
+			func(ctx context.Context, params AgentParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+				if params.Prompt == "" {
+					return fantasy.NewTextErrorResponse("prompt is required"), nil
+				}
+
+				sessionID := tools.GetSessionFromContext(ctx)
+				if sessionID == "" {
+					return fantasy.ToolResponse{}, errors.New("session id missing from context")
+				}
+
+				agentMessageID := tools.GetMessageFromContext(ctx)
+				if agentMessageID == "" {
+					return fantasy.ToolResponse{}, errors.New("agent message id missing from context")
+				}
+
+				return c.runSubAgent(ctx, subAgentParams{
+					Agent:          subAgent,
+					SessionID:      sessionID,
+					AgentMessageID: agentMessageID,
+					ToolCallID:     call.ID,
+					Prompt:         params.Prompt,
+					SessionTitle:   fmt.Sprintf("Agent: %s", ad.Name),
+				})
+			},
+		)
+
+		agentTools = append(agentTools, tool)
+		slog.Info("Plugin agent registered as tool", "plugin", p.Manifest.Name, "agent", ad.Name, "tool", toolName)
+	}
+
+	return agentTools
+}
+
+type headerStrippingTransport struct {
+	Transport http.RoundTripper
+	Headers   []string
+}
+
+func (t *headerStrippingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	for _, h := range t.Headers {
+		req.Header.Del(h)
+	}
+	return t.Transport.RoundTrip(req)
 }

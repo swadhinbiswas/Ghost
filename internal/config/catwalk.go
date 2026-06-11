@@ -33,15 +33,15 @@ func (s *catwalkSync) Get(ctx context.Context) ([]catwalk.Provider, error) {
 		panic("called Get before Init")
 	}
 
-	if !s.autoupdate {
-		slog.Info("Using embedded Catwalk providers")
-		return embedded.GetAll(), nil
-	}
-
 	cached, etag, cachedErr := s.cache.Get()
 	if len(cached) == 0 || cachedErr != nil {
 		// if cached file is empty, default to embedded providers
 		cached = embedded.GetAll()
+	}
+
+	if !s.autoupdate {
+		slog.Info("Using cached/embedded Catwalk providers")
+		return cached, nil
 	}
 
 	slog.Info("Fetching providers from Catwalk")

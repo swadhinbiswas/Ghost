@@ -295,6 +295,9 @@ func (c *Config) configureProviders(store *ConfigStore, env env.Env, resolver Va
 		case "nvidia-nim":
 			// Nvidia NIM is shown in the model list even without an API key.
 			// If the user selects it without a key, the auth dialog will prompt.
+		case "oi-vscode":
+			// OI VSCode Server is shown in the model list even without an API key.
+			// If the user selects it without a key, the auth dialog will prompt.
 		default:
 			// if the provider api or endpoint are missing we skip them
 			v, err := resolver.ResolveValue(p.APIKey)
@@ -384,10 +387,13 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	if dataDir != "" {
 		c.Options.DataDirectory = dataDir
 	} else if c.Options.DataDirectory == "" {
-		if path, ok := fsext.LookupClosest(workingDir, defaultDataDirectory); ok {
-			c.Options.DataDirectory = path
+		// For backward compatibility, check if a local .ghost directory exists in the workspace.
+		localPath := filepath.Join(workingDir, defaultDataDirectory)
+		if _, err := os.Stat(localPath); err == nil {
+			c.Options.DataDirectory = localPath
 		} else {
-			c.Options.DataDirectory = filepath.Join(workingDir, defaultDataDirectory)
+			// Otherwise, default to a global database/data directory at ~/.ghost
+			c.Options.DataDirectory = filepath.Join(home.Dir(), defaultDataDirectory)
 		}
 	}
 	if c.Providers == nil {

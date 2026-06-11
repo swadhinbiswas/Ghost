@@ -14,6 +14,7 @@ const (
 )
 
 // ShareURL builds a WebSocket URL for the given collaboration room.
+// If baseURL is empty, it falls back to DefaultShareURL.
 func ShareURL(baseURL, roomID string) string {
 	if baseURL == "" {
 		baseURL = DefaultShareURL

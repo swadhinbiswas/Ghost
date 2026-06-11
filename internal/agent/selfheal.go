@@ -1,206 +1,144 @@
 package agent
 
 import (
+	"context"
 	"fmt"
-	"regexp"
+	"log/slog"
+	"os/exec"
 	"strings"
+	"time"
 
 	"charm.land/fantasy"
 )
 
-// SelfHealingPrompt is injected into the system prompt to enable self-correction behavior.
 const SelfHealingPrompt = `
-<self_healing>
-When a tool call fails, follow these steps before asking the user for help:
 
-1. **Analyze the error**: Read the error message carefully to understand what went wrong.
-2. **Identify the root cause**: Determine if it's a file path issue, syntax error, missing dependency, permission problem, etc.
-3. **Attempt automatic fix**:
-   - File not found: Use 'glob' to search for the correct path, then retry
-   - Syntax error: Review and fix the command syntax, then retry
-   - Compilation error: Check imports, fix type errors, then retry
-   - Test failure: Read the test output, identify failing tests, fix the code, then retry
-   - Command failed: Check arguments, verify prerequisites, then retry
-4. **Limit retries**: Try at most 2 automatic fixes. If still failing, explain the issue to the user.
+# Self-Healing Verification Loops
+When you modify files using the "edit", "write", "multiedit", or "atomic_edit" tools, Ghost will run a verification command (e.g. compilation/test suites) in the background.
+If the verification command fails, you will receive a tool error response structured like this:
+<verification_failure>
+Your changes broke the build. Here is the compiler/test error:
+[error output]
+Please use the edit/write tools to fix the errors and run the compilation/verification again.
+</verification_failure>
 
-Common error patterns and fixes:
-- "no such file or directory" → File path is wrong, use glob to find it
-- "command not found" → Missing tool, try alternative approach
-- "permission denied" → Need different approach or user intervention
-- "syntax error" → Check quotes, brackets, escaping
-- "undefined" → Missing import or variable scope issue
-- "exit status 1" → Command failed, check stderr for details
-</self_healing>
+If you receive this error, do NOT ask the user for help or stop. You must analyze the error output, figure out the cause of the failure (e.g., compile error, import issue, syntax mistake, type mismatch, or failed unit test), and call the appropriate edit/write tools to fix it.
 `
 
-// AnalyzeError provides a detailed analysis of a tool execution error.
-// This is used to enhance error responses with actionable suggestions.
-func AnalyzeError(err error, response fantasy.ToolResponse, toolName string) string {
-	var sb strings.Builder
+// VerifyBuild runs the verification command and returns build/test output if it fails.
+func (a *sessionAgent) VerifyBuild(ctx context.Context) (bool, string, error) {
+	if a.cfg == nil {
+		return true, "", nil
+	}
 
-	sb.WriteString(fmt.Sprintf("[Tool '%s' failed]\n", toolName))
+	cmdStr := a.cfg.Config().Options.VerificationCommand
+	if cmdStr == "" {
+		return true, "", nil
+	}
 
-	errStr := ""
+	slog.Info("Running verification build/test command", "command", cmdStr)
+
+	// Create context with a timeout so a hanging test/build command doesn't block forever
+	verifyCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	var cmd *exec.Cmd
+	// Use shell to run the command to support complex pipelines (e.g. "npm run build && npm run test")
+	if strings.Contains(cmdStr, " ") || strings.Contains(cmdStr, "&&") || strings.Contains(cmdStr, "||") || strings.Contains(cmdStr, "|") {
+		cmd = exec.CommandContext(verifyCtx, "bash", "-c", cmdStr)
+	} else {
+		cmd = exec.CommandContext(verifyCtx, cmdStr)
+	}
+
+	cmd.Dir = a.cfg.WorkingDir()
+
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		errStr = err.Error()
-	} else if response.IsError {
-		errStr = response.Content
+		slog.Warn("Verification command failed", "error", err, "output", string(out))
+		return false, string(out), nil
 	}
 
-	if errStr == "" {
-		return sb.String()
-	}
-
-	// Categorize and provide suggestions
-	switch {
-	case strings.Contains(errStr, "file not found"), strings.Contains(errStr, "no such file"):
-		sb.WriteString("Category: File not found\n")
-		sb.WriteString("Auto-fix: Use 'glob' tool to search for the correct file path, then retry with the correct path.\n")
-
-	case strings.Contains(errStr, "permission denied"):
-		sb.WriteString("Category: Permission denied\n")
-		sb.WriteString("Auto-fix: This typically requires user intervention. Consider asking the user to run with elevated permissions.\n")
-
-	case strings.Contains(errStr, "syntax error"), strings.Contains(errStr, "unexpected"):
-		sb.WriteString("Category: Syntax error\n")
-		sb.WriteString("Auto-fix: Check for unclosed quotes, brackets, or escaping issues. Review command syntax and retry.\n")
-
-	case strings.Contains(errStr, "command not found"):
-		sb.WriteString("Category: Command not found\n")
-		sb.WriteString("Auto-fix: The command may not be installed. Try an alternative approach or check PATH.\n")
-
-	case strings.Contains(errStr, "exit status"):
-		sb.WriteString("Category: Command failed\n")
-		sb.WriteString("Auto-fix: Check the command arguments and stderr output. Verify prerequisites and retry.\n")
-
-	case strings.Contains(errStr, "compilation failed"), strings.Contains(errStr, "build failed"):
-		sb.WriteString("Category: Build/compilation failed\n")
-		sb.WriteString("Auto-fix: Review compiler errors, check imports and types, fix issues, then retry build.\n")
-
-	case strings.Contains(errStr, "test failed"), strings.Contains(errStr, "FAIL"):
-		sb.WriteString("Category: Test failure\n")
-		sb.WriteString("Auto-fix: Read test output to identify failing tests, fix the code, then re-run tests.\n")
-
-	case strings.Contains(errStr, "undefined"), strings.Contains(errStr, "cannot find"):
-		sb.WriteString("Category: Undefined reference\n")
-		sb.WriteString("Auto-fix: Check for missing imports, typos in variable/function names, or scope issues.\n")
-
-	default:
-		sb.WriteString(fmt.Sprintf("Error: %s\n", truncateString(errStr, 200)))
-		sb.WriteString("Auto-fix: Analyze the error above and attempt a targeted fix based on the error type.\n")
-	}
-
-	return sb.String()
+	slog.Info("Verification command passed successfully")
+	return true, "", nil
 }
 
-// EnhanceToolResult wraps a tool result with error analysis if it failed.
-// This helps the LLM understand what went wrong and how to fix it.
-func EnhanceToolResult(response fantasy.ToolResponse, toolName string) fantasy.ToolResponse {
-	if !response.IsError {
-		return response
-	}
-
-	analysis := AnalyzeError(nil, response, toolName)
-	response.Content = analysis + "\nOriginal error:\n" + response.Content
-	return response
+type verificationWrappedTool struct {
+	fantasy.AgentTool
+	a         *sessionAgent
+	sessionID string
 }
 
-// ExtractErrorType categorizes an error string into a known error type.
-func ExtractErrorType(errStr string) string {
-	switch {
-	case strings.Contains(errStr, "file not found"), strings.Contains(errStr, "no such file"):
-		return "file_not_found"
-	case strings.Contains(errStr, "permission denied"):
-		return "permission_denied"
-	case strings.Contains(errStr, "syntax error"):
-		return "syntax_error"
-	case strings.Contains(errStr, "command not found"):
-		return "command_not_found"
-	case strings.Contains(errStr, "exit status"):
-		return "command_failed"
-	case strings.Contains(errStr, "compilation failed"), strings.Contains(errStr, "build failed"):
-		return "compilation_failed"
-	case strings.Contains(errStr, "test failed"), strings.Contains(errStr, "FAIL"):
-		return "test_failed"
-	case strings.Contains(errStr, "undefined"), strings.Contains(errStr, "cannot find"):
-		return "undefined_reference"
-	default:
-		return "unknown"
+func (w *verificationWrappedTool) Run(ctx context.Context, params fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	resp, err := w.AgentTool.Run(ctx, params)
+	if err != nil || resp.IsError {
+		return resp, err
 	}
+
+	if w.a.cfg == nil {
+		return resp, nil
+	}
+
+	cmdStr := w.a.cfg.Config().Options.VerificationCommand
+	if cmdStr == "" {
+		return resp, nil
+	}
+
+	maxRetries := w.a.cfg.Config().Options.MaxVerificationRetries
+	if maxRetries <= 0 {
+		maxRetries = 3
+	}
+
+	w.a.verificationMu.Lock()
+	retries := w.a.verificationRetries[w.sessionID]
+	w.a.verificationMu.Unlock()
+
+	if retries >= maxRetries {
+		slog.Warn("Max verification retries reached, returning original result", "retries", retries, "sessionID", w.sessionID)
+		return resp, nil
+	}
+
+	// Run verification command
+	ok, out, err := w.a.VerifyBuild(ctx)
+	if err != nil {
+		return resp, err
+	}
+
+	if ok {
+		return resp, nil
+	}
+
+	// Increment retry counter
+	w.a.verificationMu.Lock()
+	w.a.verificationRetries[w.sessionID] = retries + 1
+	w.a.verificationMu.Unlock()
+
+	// Return verification failure XML response block
+	failMsg := fmt.Sprintf("<verification_failure>\nYour changes broke the build. Here is the compiler/test error:\n%s\nPlease use the edit/write tools to fix the errors and run the compilation/verification again.\n</verification_failure>", out)
+
+	return fantasy.NewTextErrorResponse(failMsg), nil
 }
 
-// IsRecoverableError determines if an error can potentially be auto-fixed.
-func IsRecoverableError(errStr string) bool {
-	unrecoverable := []string{
-		"permission denied",
-		"segmentation fault",
-		"out of memory",
-		"disk full",
-		"network unreachable",
-		"connection refused",
+func (a *sessionAgent) wrapToolsWithVerification(ctx context.Context, sessionID string, tools []fantasy.AgentTool) []fantasy.AgentTool {
+	if a.cfg == nil {
+		return tools
+	}
+	cmdStr := a.cfg.Config().Options.VerificationCommand
+	if cmdStr == "" {
+		return tools
 	}
 
-	for _, pattern := range unrecoverable {
-		if strings.Contains(errStr, pattern) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// ExtractFilePaths extracts file paths from an error message.
-func ExtractFilePaths(errStr string) []string {
-	// Match common file path patterns
-	pathRegex := regexp.MustCompile(`(?:cannot open|file|path)["']?\s*[:"]?([^"'\s,]+(?:\.\w+)?)["']?`)
-	matches := pathRegex.FindAllStringSubmatch(errStr, -1)
-
-	var paths []string
-	seen := make(map[string]bool)
-
-	for _, match := range matches {
-		if len(match) > 1 {
-			path := match[1]
-			if !seen[path] && len(path) > 2 {
-				seen[path] = true
-				paths = append(paths, path)
+	wrapped := make([]fantasy.AgentTool, len(tools))
+	for i, t := range tools {
+		name := t.Info().Name
+		if name == "edit" || name == "write" || name == "multiedit" || name == "atomic_edit" {
+			wrapped[i] = &verificationWrappedTool{
+				AgentTool: t,
+				a:         a,
+				sessionID: sessionID,
 			}
+		} else {
+			wrapped[i] = t
 		}
 	}
-
-	return paths
-}
-
-// ExtractMissingImports extracts missing import/package names from compilation errors.
-func ExtractMissingImports(errStr string) []string {
-	// Go: cannot find package "..."
-	goRegex := regexp.MustCompile(`cannot find package "([^"]+)"`)
-	// TypeScript/JS: Cannot find module '...'
-	tsRegex := regexp.MustCompile(`Cannot find module ['"]([^'"]+)['"]`)
-	// Python: No module named '...'
-	pyRegex := regexp.MustCompile(`No module named ['"]([^'"]+)['"]`)
-
-	var imports []string
-	seen := make(map[string]bool)
-
-	for _, regex := range []*regexp.Regexp{goRegex, tsRegex, pyRegex} {
-		for _, match := range regex.FindAllStringSubmatch(errStr, -1) {
-			if len(match) > 1 {
-				imp := match[1]
-				if !seen[imp] {
-					seen[imp] = true
-					imports = append(imports, imp)
-				}
-			}
-		}
-	}
-
-	return imports
-}
-
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
+	return wrapped
 }

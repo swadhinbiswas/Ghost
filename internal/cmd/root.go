@@ -165,7 +165,7 @@ func Execute() {
 		context.Background(),
 		rootCmd,
 		fang.WithVersion(version.Version),
-		fang.WithNotifySignal(os.Interrupt),
+		fang.WithNotifySignal(os.Interrupt, os.Kill),
 	); err != nil {
 		os.Exit(1)
 	}

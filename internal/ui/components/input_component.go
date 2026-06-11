@@ -1,13 +1,13 @@
 package components
 
 import (
-"image"
-"strings"
+	"image"
+	"strings"
 
-"charm.land/bubbles/v2/textarea"
-tea "charm.land/bubbletea/v2"
-uv "github.com/charmbracelet/ultraviolet"
-"github.com/swadhinbiswas/ghost/internal/ui/styles"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/swadhinbiswas/ghost/internal/ui/styles"
 )
 
 type InputComponent struct {
@@ -23,7 +23,7 @@ func NewInputComponent(s *styles.Styles) *InputComponent {
 	ta.Placeholder = "Type a message..."
 	ta.ShowLineNumbers = false
 	ta.Focus()
-	
+
 	return &InputComponent{
 		BaseComponent: NewBaseComponent("input"),
 		textarea:      ta,
@@ -35,10 +35,10 @@ func (c *InputComponent) Draw(scr uv.Screen, area uv.Rectangle) {
 	if !c.visible {
 		return
 	}
-	
+
 	c.textarea.SetWidth(area.Dx())
 	c.textarea.SetHeight(area.Dy())
-	
+
 	styled := uv.NewStyledString(c.textarea.View())
 	styled.Draw(scr, area)
 }

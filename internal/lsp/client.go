@@ -12,13 +12,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
+	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/charmbracelet/x/powernap/pkg/transport"
 	"github.com/swadhinbiswas/ghost/internal/config"
 	"github.com/swadhinbiswas/ghost/internal/csync"
 	"github.com/swadhinbiswas/ghost/internal/fsext"
 	"github.com/swadhinbiswas/ghost/internal/home"
-	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
-	"github.com/charmbracelet/x/powernap/pkg/transport"
 )
 
 // DiagnosticCounts holds the count of diagnostics by severity.

@@ -246,11 +246,19 @@ func (Attribution) JSONSchemaExtend(schema *jsonschema.Schema) {
 	}
 }
 
+type SandboxType string
+
+const (
+	SandboxNone   SandboxType = "none"
+	SandboxDocker SandboxType = "docker"
+)
+
 type Options struct {
 	ContextPaths              []string     `json:"context_paths,omitempty" jsonschema:"description=Paths to files containing context information for the AI,example=.cursorrules,example=GHOST.md"`
 	SkillsPaths               []string     `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/Ghost/skills,example=./skills"`
 	TUI                       *TUIOptions  `json:"tui,omitempty" jsonschema:"description=Terminal user interface options"`
 	CollabShareURL            string       `json:"collab_share_url,omitempty" jsonschema:"description=Base WebSocket URL used when generating collaboration share links,example=ws://ghost.example.com:8787"`
+	CollabAllowedOrigins      []string     `json:"collab_allowed_origins,omitempty" jsonschema:"description=Allowed origins for WebSocket collaboration connections,example=[\"https://ghost.example.com\"]"`
 	Debug                     bool         `json:"debug,omitempty" jsonschema:"description=Enable debug logging,default=false"`
 	DebugLSP                  bool         `json:"debug_lsp,omitempty" jsonschema:"description=Enable debug logging for LSP servers,default=false"`
 	DisableAutoSummarize      bool         `json:"disable_auto_summarize,omitempty" jsonschema:"description=Disable automatic conversation summarization,default=false"`
@@ -264,6 +272,10 @@ type Options struct {
 	AutoLSP                   *bool        `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
 	Progress                  *bool        `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
 	DisableNotifications      bool         `json:"disable_notifications,omitempty" jsonschema:"description=Disable desktop notifications,default=false"`
+	VerificationCommand       string       `json:"verification_command,omitempty" jsonschema:"description=Command to verify project build/test,example=go test ./...,example=npm run build"`
+	MaxVerificationRetries    int          `json:"max_verification_retries,omitempty" jsonschema:"description=Maximum retries for self-correction loops,default=3"`
+	Sandbox                   SandboxType  `json:"sandbox,omitempty" jsonschema:"description=Sandbox executor type,enum=none,enum=docker,default=none"`
+	SandboxImage              string       `json:"sandbox_image,omitempty" jsonschema:"description=Docker image to use for sandbox,default=golang:latest"`
 }
 
 type MCPs map[string]MCPConfig

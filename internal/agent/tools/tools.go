@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 )
 
 type (
@@ -53,4 +55,42 @@ func GetSupportsImagesFromContext(ctx context.Context) bool {
 // GetModelNameFromContext retrieves the model name from the context.
 func GetModelNameFromContext(ctx context.Context) string {
 	return getContextValue(ctx, ModelNameContextKey, "")
+}
+
+// IsInSkillsPath checks if filePath is within any of the configured skills
+// directories. Returns true for files that can be read or executed without permission
+// prompts and without size limits.
+func IsInSkillsPath(filePath string, skillsPaths []string) bool {
+	if len(skillsPaths) == 0 {
+		return false
+	}
+
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return false
+	}
+
+	evalFilePath, err := filepath.EvalSymlinks(absFilePath)
+	if err != nil {
+		return false
+	}
+
+	for _, skillsPath := range skillsPaths {
+		absSkillsPath, err := filepath.Abs(skillsPath)
+		if err != nil {
+			continue
+		}
+
+		evalSkillsPath, err := filepath.EvalSymlinks(absSkillsPath)
+		if err != nil {
+			continue
+		}
+
+		relPath, err := filepath.Rel(evalSkillsPath, evalFilePath)
+		if err == nil && !strings.HasPrefix(relPath, "..") {
+			return true
+		}
+	}
+
+	return false
 }

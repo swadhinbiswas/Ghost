@@ -188,10 +188,10 @@ func blockFuncs() []shell.BlockFunc {
 	}
 }
 
-func NewBashTool(permissions permission.Service, workingDir string, attribution *config.Attribution, modelName string) fantasy.AgentTool {
+func NewBashTool(permissions permission.Service, workingDir string, opts *config.Options, modelName string) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
 		BashToolName,
-		string(bashDescription(attribution, modelName)),
+		string(bashDescription(opts.Attribution, modelName)),
 		func(ctx context.Context, params BashParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			if params.Command == "" {
 				return fantasy.NewTextErrorResponse("missing command"), nil
@@ -212,11 +212,33 @@ func NewBashTool(permissions permission.Service, workingDir string, attribution 
 				}
 			}
 
+			// Bypass permissions for executing scripts inside any configured skills paths
+			isSkillScript := IsInSkillsPath(execWorkingDir, opts.SkillsPaths)
+			if !isSkillScript {
+				// Parse first word of command as a potential path to see if it is in skills path
+				words := strings.Fields(params.Command)
+				if len(words) > 0 {
+					firstWord := words[0]
+					// If running python/bash/sh/node/go followed by a script path
+					if (firstWord == "python" || firstWord == "python3" || firstWord == "bash" || firstWord == "sh" || firstWord == "node" || firstWord == "go") && len(words) > 1 {
+						firstWord = words[1]
+					}
+					// Check if firstWord resolves to a file inside skills path
+					checkPath := firstWord
+					if !filepath.IsAbs(checkPath) {
+						checkPath = filepath.Join(execWorkingDir, checkPath)
+					}
+					if IsInSkillsPath(checkPath, opts.SkillsPaths) {
+						isSkillScript = true
+					}
+				}
+			}
+
 			sessionID := GetSessionFromContext(ctx)
 			if sessionID == "" {
 				return fantasy.ToolResponse{}, fmt.Errorf("session ID is required for executing shell command")
 			}
-			if !isSafeReadOnly {
+			if !isSafeReadOnly && !isSkillScript {
 				p, err := permissions.Request(ctx,
 					permission.CreatePermissionRequest{
 						SessionID:   sessionID,
@@ -241,8 +263,14 @@ func NewBashTool(permissions permission.Service, workingDir string, attribution 
 				startTime := time.Now()
 				bgManager := shell.GetBackgroundShellManager()
 				bgManager.Cleanup()
+
+				var sandboxMgr *shell.SandboxManager
+				if opts.Sandbox == config.SandboxDocker {
+					sandboxMgr = shell.NewSandboxManager(shell.SandboxDocker, opts.SandboxImage, execWorkingDir)
+				}
+
 				// Use background context so it continues after tool returns
-				bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description)
+				bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description, sandboxMgr)
 				if err != nil {
 					return fantasy.ToolResponse{}, fmt.Errorf("error starting background shell: %w", err)
 				}
@@ -297,7 +325,13 @@ func NewBashTool(permissions permission.Service, workingDir string, attribution 
 			// Start with detached context so it can survive if moved to background
 			bgManager := shell.GetBackgroundShellManager()
 			bgManager.Cleanup()
-			bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description)
+
+			var sandboxMgr *shell.SandboxManager
+			if opts.Sandbox == config.SandboxDocker {
+				sandboxMgr = shell.NewSandboxManager(shell.SandboxDocker, opts.SandboxImage, execWorkingDir)
+			}
+
+			bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description, sandboxMgr)
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error starting shell: %w", err)
 			}

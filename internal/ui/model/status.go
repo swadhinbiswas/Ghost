@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"charm.land/bubbles/v2/help"
-	"fmt"
-	"github.com/swadhinbiswas/ghost/internal/session"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"fmt"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/swadhinbiswas/ghost/internal/session"
 	"github.com/swadhinbiswas/ghost/internal/ui/common"
 	"github.com/swadhinbiswas/ghost/internal/ui/util"
 )
@@ -74,9 +74,9 @@ func (s *Status) Draw(scr uv.Screen, area uv.Rectangle, currentSession *session.
 	if !s.hideHelp {
 		helpView := s.com.Styles.Status.Help.Render(s.help.View(s.helpKm))
 		if currentSession != nil {
-			statsText := fmt.Sprintf(" \u2022 Cost: $%.4f \u2022 TOK: %d \u2022 Model: Ghost Pro", currentSession.Cost, currentSession.PromptTokens+currentSession.CompletionTokens)
+			statsText := fmt.Sprintf(" \u2022 Cost: $%.4f \u2022 TOK: %d", currentSession.Cost, currentSession.PromptTokens+currentSession.CompletionTokens)
 			statsRendered := lipgloss.NewStyle().Foreground(lipgloss.Color("#A3A3A3")).Render(statsText)
-			padWidth := max(0, area.Dx() - lipgloss.Width(helpView) - lipgloss.Width(statsRendered))
+			padWidth := max(0, area.Dx()-lipgloss.Width(helpView)-lipgloss.Width(statsRendered))
 			helpView += strings.Repeat(" ", padWidth) + statsRendered
 		}
 		uv.NewStyledString(helpView).Draw(scr, area)

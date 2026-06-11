@@ -115,9 +115,13 @@ type sessionAgent struct {
 	disableAutoSummarize bool
 	isYolo               bool
 	notify               pubsub.Publisher[notify.Notification]
+	cfg                  *config.ConfigStore
 
 	messageQueue   *csync.Map[string, []SessionAgentCall]
 	activeRequests *csync.Map[string, context.CancelFunc]
+
+	verificationMu      sync.Mutex
+	verificationRetries map[string]int
 }
 
 type SessionAgentOptions struct {
@@ -132,6 +136,7 @@ type SessionAgentOptions struct {
 	Messages             message.Service
 	Tools                []fantasy.AgentTool
 	Notify               pubsub.Publisher[notify.Notification]
+	Config               *config.ConfigStore
 }
 
 func NewSessionAgent(
@@ -149,8 +154,10 @@ func NewSessionAgent(
 		tools:                csync.NewSliceFrom(opts.Tools),
 		isYolo:               opts.IsYolo,
 		notify:               opts.Notify,
+		cfg:                  opts.Config,
 		messageQueue:         csync.NewMap[string, []SessionAgentCall](),
 		activeRequests:       csync.NewMap[string, context.CancelFunc](),
+		verificationRetries:  make(map[string]int),
 	}
 }
 
@@ -173,8 +180,13 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		return nil, nil
 	}
 
+	// Reset verification retry counter for this session
+	a.verificationMu.Lock()
+	a.verificationRetries[call.SessionID] = 0
+	a.verificationMu.Unlock()
+
 	// Copy mutable fields under lock to avoid races with SetTools/SetModels.
-	agentTools := a.tools.Copy()
+	agentTools := a.wrapToolsWithVerification(ctx, call.SessionID, a.tools.Copy())
 	largeModel := a.largeModel.Get()
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
@@ -267,7 +279,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			}
 
 			// Use latest tools (updated by SetTools when MCP tools change).
-			prepared.Tools = a.tools.Copy()
+			prepared.Tools = a.wrapToolsWithVerification(callContext, call.SessionID, a.tools.Copy())
 
 			queuedCalls, _ := a.messageQueue.Get(call.SessionID)
 			a.messageQueue.Del(call.SessionID)

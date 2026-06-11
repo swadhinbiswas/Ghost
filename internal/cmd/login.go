@@ -16,15 +16,17 @@ import (
 	"github.com/swadhinbiswas/ghost/internal/oauth"
 	"github.com/swadhinbiswas/ghost/internal/oauth/copilot"
 	"github.com/swadhinbiswas/ghost/internal/oauth/hyper"
+	"golang.org/x/term"
 )
 
 var loginCmd = &cobra.Command{
 	Aliases: []string{"auth"},
 	Use:     "login [platform]",
-	Short:   "Login Ghost to a platform",
-	Long: `Login Ghost to a specified platform.
-The platform should be provided as an argument.
-Available platforms are: hyper, copilot.`,
+	Short:   "Login Ghost to a platform or save an API key",
+	Long: `Login Ghost to a specified platform or save an API key for any AI provider.
+The platform or provider ID should be provided as an argument.
+If the provider uses OAuth (like hyper or copilot), it will initiate the OAuth flow.
+Otherwise, it will securely prompt you for your API key and save it to your local configuration store.`,
 	Example: `
 # Authenticate with Charm Hyper
 Ghost login
@@ -35,8 +37,11 @@ Ghost login copilot
 	ValidArgs: []cobra.Completion{
 		"hyper",
 		"copilot",
-		"github",
 		"github-copilot",
+		"nvidia-nim",
+		"openai",
+		"anthropic",
+		"google",
 	},
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -56,7 +61,7 @@ Ghost login copilot
 		case "copilot", "github", "github-copilot":
 			return loginCopilot(app.Store())
 		default:
-			return fmt.Errorf("unknown platform: %s", args[0])
+			return loginAPIKey(app.Store(), provider)
 		}
 	},
 }
@@ -200,4 +205,26 @@ func getLoginContext() context.Context {
 
 func waitEnter() {
 	_, _ = fmt.Scanln()
+}
+
+func loginAPIKey(cfg *config.ConfigStore, provider string) error {
+	fmt.Printf("Enter API key for %s: ", provider)
+	keyBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return fmt.Errorf("failed to read API key: %w", err)
+	}
+	fmt.Println()
+
+	apiKey := string(keyBytes)
+	if apiKey == "" {
+		return fmt.Errorf("API key cannot be empty")
+	}
+
+	err = cfg.SetProviderAPIKey(config.ScopeGlobal, provider, apiKey)
+	if err != nil {
+		return fmt.Errorf("failed to save API key: %w", err)
+	}
+
+	fmt.Printf("Successfully saved API key for provider '%s' to configuration store.\n", provider)
+	return nil
 }

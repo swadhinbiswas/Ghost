@@ -1237,7 +1237,8 @@ func DefaultStyles(themeName string) Styles {
 		BorderForeground(primary).BorderStyle(normalBorder)
 	s.Chat.Message.UserFocused = s.Chat.Message.NoContent.PaddingLeft(1).BorderLeft(true).
 		BorderForeground(primary).BorderStyle(messageFocussedBorder)
-	s.Chat.Message.AssistantBlurred = s.Chat.Message.NoContent.PaddingLeft(2)
+	s.Chat.Message.AssistantBlurred = s.Chat.Message.NoContent.PaddingLeft(1).BorderLeft(true).
+		BorderForeground(secondary).BorderStyle(normalBorder)
 	s.Chat.Message.AssistantFocused = s.Chat.Message.NoContent.PaddingLeft(1).BorderLeft(true).
 		BorderForeground(greenDark).BorderStyle(messageFocussedBorder)
 	s.Chat.Message.Thinking = lipgloss.NewStyle().MaxHeight(10)
@@ -1251,7 +1252,8 @@ func DefaultStyles(themeName string) Styles {
 		BorderStyle(messageFocussedBorder).
 		BorderLeft(true).
 		BorderForeground(greenDark)
-	s.Chat.Message.ToolCallBlurred = s.Muted.PaddingLeft(2)
+	s.Chat.Message.ToolCallBlurred = s.Muted.PaddingLeft(1).BorderLeft(true).
+		BorderForeground(border).BorderStyle(normalBorder)
 	// No padding or border for compact tool calls within messages
 	s.Chat.Message.ToolCallCompact = s.Muted
 	s.Chat.Message.SectionHeader = s.Base.PaddingLeft(2)

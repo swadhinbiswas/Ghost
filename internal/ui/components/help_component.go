@@ -1,9 +1,9 @@
 package components
 
 import (
-tea "charm.land/bubbletea/v2"
-uv "github.com/charmbracelet/ultraviolet"
-"github.com/swadhinbiswas/ghost/internal/ui/styles"
+	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/swadhinbiswas/ghost/internal/ui/styles"
 )
 
 type HelpComponent struct {

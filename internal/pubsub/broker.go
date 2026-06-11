@@ -2,17 +2,19 @@ package pubsub
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 )
 
 const bufferSize = 64
 
 type Broker[T any] struct {
-	subs      map[chan Event[T]]struct{}
-	mu        sync.RWMutex
-	done      chan struct{}
-	subCount  int
-	maxEvents int
+	subs        map[chan Event[T]]struct{}
+	mu          sync.RWMutex
+	done        chan struct{}
+	subCount    int
+	maxEvents   int
+	overflowLog int // count of overflowed events for this broker
 }
 
 func NewBroker[T any]() *Broker[T] {
@@ -88,6 +90,12 @@ func (b *Broker[T]) GetSubscriberCount() int {
 	return b.subCount
 }
 
+func (b *Broker[T]) GetOverflowCount() int {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.overflowLog
+}
+
 func (b *Broker[T]) Publish(t EventType, payload T) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -104,8 +112,16 @@ func (b *Broker[T]) Publish(t EventType, payload T) {
 		select {
 		case sub <- event:
 		default:
-			// Channel is full, subscriber is slow - skip this event
-			// This prevents blocking the publisher
+			// Channel is full, subscriber is slow - log overflow once per
+			// 100 dropped events to avoid log spam while still surfacing
+			// the problem.
+			b.overflowLog++
+			if b.overflowLog%100 == 0 {
+				slog.Warn("Subscriber channel full, dropping events",
+					"dropped_total", b.overflowLog,
+					"subscriber_count", b.subCount,
+				)
+			}
 		}
 	}
 }

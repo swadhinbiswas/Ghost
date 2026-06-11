@@ -38,15 +38,15 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 		panic("called Get before Init")
 	}
 
-	if !s.autoupdate {
-		slog.Info("Using embedded Hyper provider")
-		return hyper.Embedded(), nil
-	}
-
 	cached, etag, cachedErr := s.cache.Get()
 	if cached.ID == "" || cachedErr != nil {
 		// if cached file is empty, default to embedded provider
 		cached = hyper.Embedded()
+	}
+
+	if !s.autoupdate {
+		slog.Info("Using cached/embedded Hyper provider")
+		return cached, nil
 	}
 
 	slog.Info("Fetching Hyper provider")

@@ -162,12 +162,92 @@ func Close(ctx context.Context) error {
 	return nil
 }
 
+// autoDetectProjectMCPs detects if the project uses GitHub or GitLab and registers public MCP servers if environment tokens exist.
+func autoDetectProjectMCPs(workingDir string) map[string]config.MCPConfig {
+	detected := make(map[string]config.MCPConfig)
+
+	// Run git config --get remote.origin.url to check project hosting
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	out, err := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url").Output()
+	if err != nil {
+		return detected
+	}
+
+	remoteURL := strings.TrimSpace(string(out))
+	if remoteURL == "" {
+		return detected
+	}
+
+	// Check for GitHub repository
+	if strings.Contains(remoteURL, "github.com") {
+		githubToken := os.Getenv("GITHUB_TOKEN")
+		if githubToken == "" {
+			githubToken = os.Getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+		}
+		if githubToken != "" {
+			detected["github"] = config.MCPConfig{
+				Type:    config.MCPStdio,
+				Command: "npx",
+				Args:    []string{"-y", "@modelcontextprotocol/server-github"},
+				Env: map[string]string{
+					"GITHUB_PERSONAL_ACCESS_TOKEN": githubToken,
+				},
+			}
+			slog.Info("Automatically detected GitHub repository and token. Registered GitHub MCP server.")
+		}
+	}
+
+	// Check for GitLab repository
+	if strings.Contains(remoteURL, "gitlab.com") || strings.Contains(remoteURL, "gitlab") {
+		gitlabToken := os.Getenv("GITLAB_TOKEN")
+		if gitlabToken == "" {
+			gitlabToken = os.Getenv("GITLAB_PERSONAL_ACCESS_TOKEN")
+		}
+		if gitlabToken != "" {
+			gitlabAPI := os.Getenv("GITLAB_API_URL")
+			envVars := map[string]string{
+				"GITLAB_PERSONAL_ACCESS_TOKEN": gitlabToken,
+			}
+			if gitlabAPI != "" {
+				envVars["GITLAB_API_URL"] = gitlabAPI
+			}
+			detected["gitlab"] = config.MCPConfig{
+				Type:    config.MCPStdio,
+				Command: "npx",
+				Args:    []string{"-y", "@modelcontextprotocol/server-gitlab"},
+				Env:     envVars,
+			}
+			slog.Info("Automatically detected GitLab repository and token. Registered GitLab MCP server.")
+		}
+	}
+
+	return detected
+}
+
 // Initialize initializes MCP clients based on the provided configuration.
 func Initialize(ctx context.Context, permissions permission.Service, cfg *config.ConfigStore) {
 	slog.Info("Initializing MCP clients")
 	var wg sync.WaitGroup
-	// Initialize states for all configured MCPs
-	for name, m := range cfg.Config().MCP {
+
+	// Get configured MCPs
+	mcpServers := make(map[string]config.MCPConfig)
+	for k, v := range cfg.Config().MCP {
+		mcpServers[k] = v
+	}
+
+	// Auto-detect project-based public MCPs
+	detected := autoDetectProjectMCPs(cfg.WorkingDir())
+	for k, v := range detected {
+		// Only register if not already explicitly configured by the user
+		if _, exists := mcpServers[k]; !exists {
+			mcpServers[k] = v
+		}
+	}
+
+	// Initialize states for all configured/detected MCPs
+	for name, m := range mcpServers {
 		if m.Disabled {
 			updateState(name, StateDisabled, nil, nil, Counts{})
 			slog.Debug("Skipping disabled MCP", "name", name)
@@ -217,6 +297,15 @@ func WaitForInit(ctx context.Context) error {
 // InitializeSingle initializes a single MCP client by name.
 func InitializeSingle(ctx context.Context, name string, cfg *config.ConfigStore) error {
 	m, exists := cfg.Config().MCP[name]
+	if !exists {
+		// Check if it's in detected MCPs
+		detected := autoDetectProjectMCPs(cfg.WorkingDir())
+		if dm, ok := detected[name]; ok {
+			m = dm
+			exists = true
+		}
+	}
+
 	if !exists {
 		return fmt.Errorf("mcp '%s' not found in configuration", name)
 	}

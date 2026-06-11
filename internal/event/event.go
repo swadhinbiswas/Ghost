@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/posthog/posthog-go"
+	"github.com/swadhinbiswas/ghost/internal/network"
 	"github.com/swadhinbiswas/ghost/internal/version"
 )
 
@@ -48,6 +49,12 @@ func SetContinueLastSession(continueLastSession bool) {
 }
 
 func Init() {
+	// STEALTH: never contact Posthog unless the user opted in.
+	// We keep the no-op client (nil) so every send() in this file is a no-op.
+	if !network.Telemetry() {
+		slog.Debug("event.Init skipped (stealth mode or no opt-in)")
+		return
+	}
 	c, err := posthog.NewWithConfig(key, posthog.Config{
 		Endpoint:        endpoint,
 		Logger:          logger{},

@@ -1,9 +1,9 @@
 package main
 
 import (
-    "github.com/swadhinbiswas/ghost/internal/cmd"
+	"github.com/swadhinbiswas/ghost/internal/cmd"
 )
 
 func main() {
-    cmd.Execute()
+	cmd.Execute()
 }

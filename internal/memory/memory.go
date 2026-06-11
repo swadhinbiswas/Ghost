@@ -105,4 +105,3 @@ func (s *MemoryStore) GetAll() map[string]string {
 
 	return copyState
 }
-

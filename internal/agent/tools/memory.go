@@ -1,13 +1,13 @@
 package tools
 
 import (
-"context"
-_ "embed"
-"fmt"
+	"context"
+	_ "embed"
+	"fmt"
 
-"charm.land/fantasy"
-"github.com/swadhinbiswas/ghost/internal/memory"
-"github.com/swadhinbiswas/ghost/internal/config"
+	"charm.land/fantasy"
+	"github.com/swadhinbiswas/ghost/internal/config"
+	"github.com/swadhinbiswas/ghost/internal/memory"
 )
 
 //go:embed memory.md
@@ -23,10 +23,10 @@ type MemoryParams struct {
 
 func NewMemoryTool(store *config.ConfigStore) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
-MemoryToolName,
-string(memoryDescription),
-func(ctx context.Context, params MemoryParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-memStore, err := memory.NewMemoryStore(store.WorkingDir())
+		MemoryToolName,
+		string(memoryDescription),
+		func(ctx context.Context, params MemoryParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			memStore, err := memory.NewMemoryStore(store.WorkingDir())
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("failed to init memory store: %w", err)
 			}

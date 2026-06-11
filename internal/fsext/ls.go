@@ -10,9 +10,9 @@ import (
 	"sync"
 
 	"github.com/charlievieth/fastwalk"
+	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/swadhinbiswas/ghost/internal/csync"
 	"github.com/swadhinbiswas/ghost/internal/home"
-	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 )
 
 // fastIgnoreDirs is a set of directory names that are always ignored.

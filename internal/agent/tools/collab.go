@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"charm.land/fantasy"
@@ -148,6 +149,10 @@ func NewCollabTool(hub *collab.Hub) fantasy.AgentTool {
 }
 
 func mustMarshal(v interface{}) json.RawMessage {
-	data, _ := json.Marshal(v)
+	data, err := json.Marshal(v)
+	if err != nil {
+		slog.Error("Failed to marshal collaboration message", "error", err)
+		return nil
+	}
 	return data
 }
