@@ -7,11 +7,17 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "preview": "bun run build && wrangler dev",
+    "astro": "astro",
+    "deploy": "bun run build && wrangler deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "12",
     "animejs": "^3.2.2",
     "astro": "^5.7.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.99.0"
   }
 }
