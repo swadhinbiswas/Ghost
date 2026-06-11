@@ -1,0 +1,35 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<DocsLayout title="Installation" description="Install Ghost on macOS, Linux, or Windows.">
+  <p>Ghost is distributed as a single binary. Pick whichever method suits you.</p>
+
+  <h2>macOS &amp; Linux (one-liner)</h2>
+  <p>The installer detects your OS and architecture, downloads the latest release, and installs it to <code>/usr/local/bin</code>:</p>
+  <pre class="block"><code>curl -fsSL https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/install.sh | bash</code></pre>
+
+  <h2>Manual download (Windows, macOS, Linux)</h2>
+  <ol>
+    <li>Go to the <a href="https://github.com/swadhinbiswas/Ghost/releases" target="_blank" rel="noopener">Releases page</a>.</li>
+    <li>Download the archive for your system — <code>.tar.gz</code> for macOS/Linux, <code>.zip</code> for Windows.</li>
+    <li>Extract it and move the <code>ghost</code> binary somewhere on your <code>PATH</code>.</li>
+  </ol>
+
+  <h2>Build from source</h2>
+  <div class="callout warn">Requires <strong>Go 1.26 or newer</strong>.</div>
+  <pre class="block"><code>git clone https://github.com/swadhinbiswas/Ghost.git
+cd Ghost
+go build -o ghost ./main.go
+sudo mv ghost /usr/local/bin/</code></pre>
+
+  <h2>Verify the install</h2>
+  <pre class="block"><code>ghost --help
+ghost --version</code></pre>
+
+  <h2>First run</h2>
+  <p>Just type <code>ghost</code> to open an interactive session, or jump straight to a free model:</p>
+  <pre class="block"><code>ghost free</code></pre>
+  <p>That's it — no API key needed. Continue to <a href={`${base}/docs/commands`}>Commands</a> to see everything Ghost can do.</p>
+</DocsLayout>

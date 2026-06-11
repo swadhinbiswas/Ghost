@@ -1,0 +1,49 @@
+---
+import Icon from './Icon.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const links = [
+  { href: `${base}/#features`, label: 'Features' },
+  { href: `${base}/#models`, label: 'Models' },
+  { href: `${base}/#install`, label: 'Install' },
+  { href: `${base}/docs`, label: 'Docs' },
+];
+const repo = 'https://github.com/swadhinbiswas/Ghost';
+---
+
+<header class="nav" data-nav>
+  <div class="container nav-inner">
+    <a class="brand" href={`${base}/`} aria-label="Ghost CLI home">
+      <span class="brand-mark">
+        <svg viewBox="0 0 240 280" width="22" height="26" aria-hidden="true">
+          <path d="M58 122 Q58 44 120 44 Q182 44 182 122 L182 206 Q171 190 160 205 Q149 220 138 205 Q127 190 120 205 Q113 190 102 205 Q91 220 80 205 Q69 190 58 206 Z" fill="currentColor"/>
+          <ellipse cx="98" cy="112" rx="10" ry="14" fill="#14121c"/>
+          <ellipse cx="142" cy="112" rx="10" ry="14" fill="#14121c"/>
+        </svg>
+      </span>
+      <span class="brand-name">Ghost</span>
+    </a>
+    <nav class="nav-links">
+      {links.map((l) => <a href={l.href}>{l.label}</a>)}
+      <a class="gh" href={repo} target="_blank" rel="noopener">
+        <Icon name="github" size={17} /> <span>Star</span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav { position: sticky; top: 0; z-index: 50; transition: background .4s var(--ease), border-color .4s var(--ease), box-shadow .4s var(--ease);
+    border-bottom: 1px solid transparent; }
+  .nav.scrolled { background: rgba(14,13,21,.72); border-bottom-color: var(--line); backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 10px 40px -30px rgba(0,0,0,.9); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: flex; align-items: center; gap: .55rem; font-family: var(--font-display); font-weight: 700; font-size: 1.16rem; color: var(--fg); letter-spacing: -.02em; }
+  .brand-mark { color: var(--purple); display: grid; place-items: center; filter: drop-shadow(0 0 10px rgba(189,147,249,.6)); transition: transform .4s var(--ease); }
+  .brand:hover .brand-mark { transform: translateY(-2px) rotate(-6deg); }
+  .nav-links { display: flex; align-items: center; gap: 1.6rem; font-size: .94rem; font-weight: 500; }
+  .nav-links a { color: var(--fg-dim); }
+  .nav-links a:hover { color: var(--fg); }
+  .gh { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem 1rem; border-radius: 999px;
+    border: 1px solid var(--line-strong); background: rgba(255,255,255,.03); color: var(--fg) !important; }
+  .gh:hover { border-color: var(--purple); box-shadow: 0 8px 30px -12px rgba(189,147,249,.6); }
+  @media (max-width: 720px){ .nav-links a:not(.gh){ display:none; } }
+</style>

@@ -1,0 +1,40 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<DocsLayout title="Introduction" description="What Ghost is and how it works.">
+  <p>
+    <strong>Ghost</strong> is a terminal-based AI assistant built to be fast, beautiful, and free.
+    It ships pre-configured with free AI providers, so you can start chatting, generating code, and
+    running tasks the moment you install it — no subscription and no API key required.
+  </p>
+
+  <div class="callout">
+    Ghost's interface is built on the foundation of <a href="https://github.com/charmbracelet/crush" target="_blank" rel="noopener">Crush</a>
+    by <a href="https://charm.sh" target="_blank" rel="noopener">Charm</a>. Huge thanks to the Charm team for the terminal toolkit.
+  </div>
+
+  <h2>Highlights</h2>
+  <ul>
+    <li><strong>Free out of the box</strong> — pre-wired to OpenCode Zen and OI VSCode free models.</li>
+    <li><strong>Single binary</strong> — native Go, no runtime dependencies.</li>
+    <li><strong>Cross-platform</strong> — Linux, macOS, and Windows on amd64 and arm64.</li>
+    <li><strong>Themeable TUI</strong> — Dracula theme included; switch anytime with <code>ghost theme</code>.</li>
+    <li><strong>Bring your own keys</strong> — connect Nvidia NIM, Gemini, Groq, Cerebras, Copilot, and OpenRouter.</li>
+  </ul>
+
+  <h2>How it works</h2>
+  <p>
+    On startup Ghost loads its provider and model list from a fast local cache (falling back to a
+    built-in static list), configures any providers you've enabled, and drops you into an interactive
+    session. Free providers need no credentials; keyed providers are unlocked with <code>ghost login</code>.
+  </p>
+
+  <h2>Next steps</h2>
+  <ul>
+    <li><a href={`${base}/docs/getting-started`}>Install Ghost →</a></li>
+    <li><a href={`${base}/docs/commands`}>Explore the commands →</a></li>
+    <li><a href={`${base}/docs/providers`}>See available providers &amp; models →</a></li>
+  </ul>
+</DocsLayout>

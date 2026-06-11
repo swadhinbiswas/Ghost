@@ -1,0 +1,75 @@
+---
+import Icon from './Icon.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const year = new Date().getFullYear();
+const cols = [
+  { title: 'Product', links: [
+    { href: `${base}/#features`, label: 'Features' },
+    { href: `${base}/#models`, label: 'Models' },
+    { href: `${base}/#install`, label: 'Install' },
+  ]},
+  { title: 'Docs', links: [
+    { href: `${base}/docs`, label: 'Introduction' },
+    { href: `${base}/docs/commands`, label: 'Commands' },
+    { href: `${base}/docs/providers`, label: 'Providers' },
+    { href: `${base}/docs/configuration`, label: 'Configuration' },
+  ]},
+  { title: 'Project', links: [
+    { href: 'https://github.com/swadhinbiswas/ghost', label: 'GitHub', ext: true },
+    { href: 'https://github.com/swadhinbiswas/ghost/releases', label: 'Releases', ext: true },
+    { href: 'https://github.com/swadhinbiswas/Ghost/blob/main/LICENSE', label: 'MIT License', ext: true },
+  ]},
+];
+---
+
+<footer>
+  <div class="container foot-grid">
+    <div class="foot-brand">
+      <div class="fb-top">
+        <span class="brand-mark">
+          <svg viewBox="0 0 240 280" width="24" height="28" aria-hidden="true">
+            <path d="M58 122 Q58 44 120 44 Q182 44 182 122 L182 206 Q171 190 160 205 Q149 220 138 205 Q127 190 120 205 Q113 190 102 205 Q91 220 80 205 Q69 190 58 206 Z" fill="currentColor"/>
+            <ellipse cx="98" cy="112" rx="10" ry="14" fill="#14121c"/>
+            <ellipse cx="142" cy="112" rx="10" ry="14" fill="#14121c"/>
+          </svg>
+        </span>
+        <span class="fb-name">Ghost<span style="color:var(--purple)">CLI</span></span>
+      </div>
+      <p class="fb-desc">A fast, beautiful AI assistant for your terminal — powered by free models.</p>
+      <a class="fb-gh" href="https://github.com/swadhinbiswas/Ghost" target="_blank" rel="noopener">
+        <Icon name="github" size={18} /> swadhinbiswas/Ghost
+      </a>
+    </div>
+    {cols.map((c) => (
+      <div class="foot-col">
+        <p class="foot-col-title">{c.title}</p>
+        <ul>
+          {c.links.map((l) => (
+            <li><a href={l.href} {...(l.ext ? { target: '_blank', rel: 'noopener' } : {})}>{l.label}</a></li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+  <div class="container foot-bottom">
+    <p>© {year} Swadhin Biswas · MIT Licensed</p>
+    <p>UI built on the <a href="https://charm.sh" target="_blank" rel="noopener">Charm</a> / <a href="https://github.com/charmbracelet/crush" target="_blank" rel="noopener">Crush</a> ecosystem</p>
+  </div>
+</footer>
+
+<style>
+  .foot-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 2.5rem; padding-bottom: 2.5rem; }
+  .fb-top { display: flex; align-items: center; gap: .6rem; }
+  .brand-mark { color: var(--purple); filter: drop-shadow(0 0 10px rgba(189,147,249,.5)); }
+  .fb-name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--fg); }
+  .fb-desc { margin: 1rem 0 1.2rem; max-width: 22rem; color: var(--fg-mute); }
+  .fb-gh { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-mono); font-size: .85rem;
+    padding: .5rem .9rem; border-radius: 10px; border: 1px solid var(--line); color: var(--fg-dim); }
+  .fb-gh:hover { border-color: var(--purple); color: var(--fg); }
+  .foot-col-title { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .16em; font-size: .7rem; color: var(--orange); margin-bottom: 1rem; }
+  .foot-col ul { list-style: none; display: grid; gap: .6rem; }
+  .foot-col a { color: var(--fg-dim); font-weight: 500; font-size: .92rem; }
+  .foot-col a:hover { color: var(--pink); }
+  .foot-bottom { display: flex; justify-content: space-between; gap: 1rem; padding-top: 2rem; border-top: 1px solid var(--line); flex-wrap: wrap; font-size: .85rem; }
+  @media (max-width: 820px){ .foot-grid{ grid-template-columns: 1fr 1fr; } .foot-brand{ grid-column: 1 / -1; } }
+</style>

@@ -1,0 +1,40 @@
+---
+// Ambient flagship background: drifting aurora blobs + grid + grain.
+---
+<div class="fx-aurora" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="grid-lines"></div>
+  <div class="vignette"></div>
+</div>
+<div class="fx-grain" aria-hidden="true"></div>
+
+<style>
+  .blob {
+    position: absolute; border-radius: 50%; filter: blur(90px); opacity: .5;
+    will-change: transform;
+    animation: auroraDrift 22s ease-in-out infinite;
+  }
+  .b1 { width: 52vw; height: 52vw; left: -12vw; top: -16vw;
+        background: radial-gradient(circle, rgba(189,147,249,.6), transparent 65%); }
+  .b2 { width: 46vw; height: 46vw; right: -12vw; top: 4vw;
+        background: radial-gradient(circle, rgba(255,121,198,.45), transparent 65%);
+        animation-duration: 27s; animation-delay: -6s; }
+  .b3 { width: 40vw; height: 40vw; left: 22vw; bottom: -18vw;
+        background: radial-gradient(circle, rgba(139,233,253,.32), transparent 65%);
+        animation-duration: 31s; animation-delay: -12s; }
+  .grid-lines {
+    position: absolute; inset: 0; opacity: .5;
+    background-image:
+      linear-gradient(rgba(140,130,190,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(140,130,190,.05) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 75%);
+  }
+  .vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 90% 70% at 50% 0%, transparent 40%, var(--bg) 100%);
+  }
+  @media (prefers-reduced-motion: reduce){ .blob{ animation: none; } }
+</style>

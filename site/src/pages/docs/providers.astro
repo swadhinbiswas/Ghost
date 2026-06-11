@@ -1,0 +1,63 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+const free = [
+  { provider: 'OpenCode Zen', model: 'Big Pickle', ctx: '200K', note: 'Stealth free' },
+  { provider: 'OpenCode Zen', model: 'DeepSeek V4 Flash Free', ctx: '128K', note: 'Free' },
+  { provider: 'OpenCode Zen', model: 'Xiaomi MiMo V2.5 Free', ctx: '128K', note: 'Free' },
+  { provider: 'OpenCode Zen', model: 'Qwen 3.6 Plus Free', ctx: '128K', note: 'Free' },
+  { provider: 'OpenCode Zen', model: 'Nemotron 3 Super Free', ctx: '1M', note: 'Reasoning' },
+  { provider: 'OI VSCode Server', model: 'MiniMax M2.7 (thinking)', ctx: '200K', note: 'Reasoning' },
+];
+
+const nim = [
+  'Nemotron 3 Ultra 550B', 'DeepSeek V4 Pro', 'DeepSeek V4 Flash', 'GLM 5.1',
+  'Kimi K2.6', 'Qwen 3.5 (122B / 397B)', 'Mistral Medium 3.5 128B',
+  'Step 3.7 Flash', 'MiniMax M2.7', 'DiffusionGemma 26B A4B IT',
+];
+---
+
+<DocsLayout title="Providers & Models" description="What ships free and how to unlock more.">
+  <p>
+    Ghost groups models by provider. Some providers are free and need no credentials; others are
+    unlocked by adding an API key with <code>ghost login</code> or an environment variable.
+  </p>
+
+  <h2>Free — no key required</h2>
+  <p>These work the moment you install Ghost:</p>
+  <table class="docs-table">
+    <thead><tr><th>Provider</th><th>Model</th><th>Context</th><th>Note</th></tr></thead>
+    <tbody>
+      {free.map((f) => (
+        <tr><td>{f.provider}</td><td><code>{f.model}</code></td><td>{f.ctx}</td><td>{f.note}</td></tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2>Nvidia NIM — set an API key</h2>
+  <p>Export your key to enable the Nvidia NIM provider:</p>
+  <pre class="block"><code>export NVIDIA_API_KEY="your-key-here"</code></pre>
+  <p>Models available through NIM include:</p>
+  <ul>
+    {nim.map((m) => <li><code>{m}</code></li>)}
+  </ul>
+
+  <h2>Catwalk providers — bring your own key</h2>
+  <p>
+    Ghost connects to the <a href="https://github.com/charmbracelet/catwalk" target="_blank" rel="noopener">Catwalk</a>
+    registry for additional providers. Run <code>ghost login</code> to add credentials for:
+  </p>
+  <ul>
+    <li>Google Gemini</li>
+    <li>Groq</li>
+    <li>Cerebras</li>
+    <li>GitHub Copilot</li>
+    <li>OpenRouter</li>
+  </ul>
+
+  <div class="callout warn">
+    Model availability is curated by each provider and can change over time. The Nvidia NIM
+    catalog is fetched from a remotely-updatable JSON source on startup-refresh; run
+    <code>ghost update-providers</code> to pull the latest list.
+  </div>
+</DocsLayout>

@@ -1,0 +1,59 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Ambient from '../components/Ambient.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ambient?: boolean;
+}
+const {
+  title = 'Ghost — a beautiful, free AI assistant for your terminal',
+  description = 'Ghost is a lightning-fast, beautiful terminal AI assistant powered by free models. Cross-platform, themeable, and open source.',
+  ambient = true,
+} = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0e0d15" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline>document.documentElement.classList.remove('no-js');</script>
+  </head>
+  <body>
+    {ambient && <Ambient />}
+    <div class="page">
+      <Nav />
+      <main><slot /></main>
+      <Footer />
+    </div>
+
+    <script>
+      import { initMotion } from '../scripts/motion';
+      initMotion();
+    </script>
+  </body>
+</html>
+
+<style>
+  .page { position: relative; z-index: 1; }
+  main { min-height: 60vh; }
+</style>

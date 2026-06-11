@@ -1,0 +1,48 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+const commands = [
+  { cmd: 'ghost', desc: 'Open the interactive TUI chat session (default).' },
+  { cmd: 'ghost run "<prompt>"', desc: 'Run a one-off prompt without entering the full UI.' },
+  { cmd: 'ghost free', desc: 'Pick a free model to chat with from a quick picker.' },
+  { cmd: 'ghost models', desc: 'List available models across configured providers.' },
+  { cmd: 'ghost login', desc: 'Add credentials for keyed providers (Gemini, Groq, etc.).' },
+  { cmd: 'ghost theme', desc: 'Switch the TUI theme (Dracula ships by default).' },
+  { cmd: 'ghost session', desc: 'Manage and resume saved chat sessions.' },
+  { cmd: 'ghost projects', desc: 'Manage project-scoped contexts and settings.' },
+  { cmd: 'ghost logs', desc: 'View Ghost logs for debugging.' },
+  { cmd: 'ghost stats', desc: 'Show usage statistics.' },
+  { cmd: 'ghost update-providers', desc: 'Refresh the provider/model registry.' },
+  { cmd: 'ghost --help', desc: 'Show all commands and flags.' },
+];
+---
+
+<DocsLayout title="Commands" description="Every Ghost command at a glance.">
+  <p>Ghost is a single command with a handful of subcommands. Run <code>ghost --help</code> any time for the full list.</p>
+
+  <h2>Reference</h2>
+  <table class="docs-table">
+    <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+    <tbody>
+      {commands.map((c) => (
+        <tr><td><code>{c.cmd}</code></td><td>{c.desc}</td></tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2>Examples</h2>
+
+  <h3>One-off prompt</h3>
+  <pre class="block"><code>ghost run "write a bash script to back up ~/notes to S3"</code></pre>
+
+  <h3>Pick a free model and chat</h3>
+  <pre class="block"><code>ghost free</code></pre>
+
+  <h3>Add a keyed provider</h3>
+  <pre class="block"><code>ghost login</code></pre>
+
+  <div class="callout">
+    Tip: most flows are also available inside the TUI via slash-commands like <code>/model</code>,
+    <code>/provider</code>, and <code>/theme</code>.
+  </div>
+</DocsLayout>

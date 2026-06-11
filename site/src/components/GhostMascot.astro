@@ -1,0 +1,93 @@
+---
+interface Props { size?: number; id?: string; }
+const { size = 280, id = 'ghost-hero' } = Astro.props;
+---
+
+<div class="ghost-stage" data-ghost id={id} style={`--gs:${size}px`}>
+  <div class="orbit orbit-1"><span class="spark"></span></div>
+  <div class="orbit orbit-2"><span class="spark s2"></span></div>
+  <div class="ghost-shadow"></div>
+
+  <div class="ghost-body-wrap">
+    <svg class="ghost-svg" viewBox="0 0 240 280" width={size} height={size * 1.16} role="img" aria-label="Ghost mascot">
+      <defs>
+        <linearGradient id={`${id}-skin`} x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="42%" stop-color="#efeaff"/>
+          <stop offset="100%" stop-color="#c9aefc"/>
+        </linearGradient>
+        <radialGradient id={`${id}-inner`} cx="50%" cy="38%" r="62%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#bd93f9" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id={`${id}-cheek`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff79c6" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#ff79c6" stop-opacity="0"/>
+        </radialGradient>
+        <filter id={`${id}-soft`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="3"/>
+        </filter>
+      </defs>
+
+      <!-- back glow layer -->
+      <path class="layer-back" d="M52 120 Q52 36 120 36 Q188 36 188 120 L188 214
+        Q176 196 164 212 Q152 228 140 212 Q128 196 120 212 Q112 196 100 212
+        Q88 228 76 212 Q64 196 52 214 Z"
+        fill={`url(#${id}-skin)`} filter={`url(#${id}-soft)`} opacity="0.35"
+        transform="translate(0 6) scale(1.04)" transform-origin="120 130"/>
+
+      <!-- main body -->
+      <path class="layer-main" d="M58 122 Q58 44 120 44 Q182 44 182 122 L182 206
+        Q171 190 160 205 Q149 220 138 205 Q127 190 120 205 Q113 190 102 205
+        Q91 220 80 205 Q69 190 58 206 Z"
+        fill={`url(#${id}-skin)`}/>
+      <path d="M58 122 Q58 44 120 44 Q182 44 182 122 L182 206
+        Q171 190 160 205 Q149 220 138 205 Q127 190 120 205 Q113 190 102 205
+        Q91 220 80 205 Q69 190 58 206 Z" fill={`url(#${id}-inner)`}/>
+
+      <!-- cheeks -->
+      <ellipse cx="86" cy="132" rx="16" ry="10" fill={`url(#${id}-cheek)`}/>
+      <ellipse cx="154" cy="132" rx="16" ry="10" fill={`url(#${id}-cheek)`}/>
+
+      <!-- face -->
+      <g class="ghost-eyes" transform-origin="120 112">
+        <g class="eye">
+          <ellipse cx="94" cy="112" rx="12.5" ry="17" fill="#1a1726"/>
+          <circle class="pupil" cx="98" cy="106" r="4.2" fill="#fff"/>
+        </g>
+        <g class="eye">
+          <ellipse cx="146" cy="112" rx="12.5" ry="17" fill="#1a1726"/>
+          <circle class="pupil" cx="150" cy="106" r="4.2" fill="#fff"/>
+        </g>
+      </g>
+      <path d="M106 146 Q120 162 134 146 Q120 154 106 146 Z" fill="#1a1726"/>
+    </svg>
+  </div>
+</div>
+
+<style>
+  .ghost-stage { position: relative; width: var(--gs); height: calc(var(--gs) * 1.4);
+    display: grid; place-items: center; }
+  .ghost-body-wrap { position: relative; z-index: 2; will-change: transform; }
+  .ghost-svg { display: block; filter: drop-shadow(0 30px 45px rgba(20,16,40,.6)); }
+  .ghost-eyes { animation: blink 6s infinite; transform-origin: 120px 112px; }
+
+  .ghost-shadow {
+    position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+    width: 46%; height: 22px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(189,147,249,.5), transparent 70%);
+    filter: blur(8px); z-index: 1; will-change: transform, opacity;
+  }
+
+  .orbit { position: absolute; inset: 0; z-index: 0; animation: spinSlow linear infinite; }
+  .orbit-1 { animation-duration: 14s; }
+  .orbit-2 { animation-duration: 22s; animation-direction: reverse; }
+  .spark { position: absolute; top: 12%; left: 50%; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 14px 3px rgba(139,233,253,.8); }
+  .spark.s2 { top: auto; bottom: 16%; left: 22%; background: var(--pink);
+    box-shadow: 0 0 14px 3px rgba(255,121,198,.8); width: 6px; height: 6px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .ghost-eyes, .orbit { animation: none; }
+  }
+</style>

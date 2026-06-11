@@ -1,0 +1,62 @@
+---
+// Decorative animated background: twinkling stars + drifting bats.
+const stars = Array.from({ length: 38 }, () => ({
+  top: Math.random() * 100,
+  left: Math.random() * 100,
+  size: Math.random() * 2 + 1,
+  delay: (Math.random() * 5).toFixed(2),
+  dur: (Math.random() * 3 + 2).toFixed(2),
+}));
+const bats = Array.from({ length: 5 }, (_, i) => ({
+  top: Math.random() * 50 + 5,
+  delay: (i * 4 + Math.random() * 3).toFixed(2),
+  dur: (Math.random() * 8 + 16).toFixed(2),
+  scale: (Math.random() * 0.5 + 0.6).toFixed(2),
+}));
+---
+
+<div class="nightsky" aria-hidden="true">
+  {stars.map((s) => (
+    <span
+      class="star"
+      style={`top:${s.top}%;left:${s.left}%;width:${s.size}px;height:${s.size}px;animation-delay:${s.delay}s;animation-duration:${s.dur}s;`}
+    ></span>
+  ))}
+  {bats.map((b) => (
+    <span class="bat" style={`top:${b.top}%;animation-delay:${b.delay}s;animation-duration:${b.dur}s;`}>
+      <svg viewBox="0 0 100 60" width={40 * Number(b.scale)} height={24 * Number(b.scale)}>
+        <path d="M50 20 C45 8 35 6 30 14 C26 4 14 4 10 16 C18 14 20 22 28 26
+                 C20 30 16 40 22 46 C30 38 40 40 44 32 L50 40 L56 32
+                 C60 40 70 38 78 46 C84 40 80 30 72 26 C80 22 82 14 90 16
+                 C86 4 74 4 70 14 C65 6 55 8 50 20 Z" fill="#1d1e26"/>
+      </svg>
+    </span>
+  ))}
+</div>
+
+<style>
+  .nightsky {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: #f8f8f2;
+    box-shadow: 0 0 6px rgba(248,248,242,.8);
+    animation-name: twinkle; animation-iteration-count: infinite;
+  }
+  .bat {
+    position: absolute; left: -10vw;
+    opacity: .85;
+    animation-name: batfly; animation-timing-function: linear; animation-iteration-count: infinite;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,.4));
+  }
+  .bat svg path { animation: batwing .5s ease-in-out infinite; transform-origin: 50% 50%; }
+  @keyframes batwing {
+    0%,100% { transform: scaleY(1); }
+    50%     { transform: scaleY(.7); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .star, .bat, .bat svg path { animation: none; }
+    .bat { display: none; }
+  }
+</style>

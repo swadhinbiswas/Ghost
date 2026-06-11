@@ -1,0 +1,318 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GhostMascot from '../components/GhostMascot.astro';
+import Icon from '../components/Icon.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const repo = 'https://github.com/swadhinbiswas/Ghost';
+
+const heroTerminal = [
+  '$ ghost run "refactor this handler and add tests"',
+  '\u00A0',
+  '\u232C analyzing project \u00B7 deepseek-v4-flash-free',
+  '\u2713 extracted validation into middleware',
+  '\u2713 added 6 table-driven tests \u00B7 all passing',
+  '\u00A0',
+  '$ ghost free   \u2192   pick a model, zero config',
+];
+
+const features = [
+  { icon: 'zap', title: 'Free out of the box', body: 'Pre-wired to free providers. No subscription, no credit card, no API key to start chatting.', accent: 'var(--green)' },
+  { icon: 'gauge', title: 'Instant cold start', body: 'A single native Go binary that loads its model list from a local cache and launches immediately.', accent: 'var(--cyan)' },
+  { icon: 'palette', title: 'Themeable TUI', body: 'A responsive, polished interface. The Dracula theme ships by default — switch anytime.', accent: 'var(--purple)' },
+  { icon: 'globe', title: 'Truly cross-platform', body: 'Linux, macOS, and Windows on amd64 and arm64. One tool, every machine you touch.', accent: 'var(--orange)' },
+  { icon: 'plug', title: 'Bring your own keys', body: 'Connect Gemini, Groq, Cerebras, Copilot, and OpenRouter through the Catwalk registry.', accent: 'var(--pink)' },
+  { icon: 'code', title: 'Open source', body: 'MIT licensed and built on the Charm ecosystem. Fork it, theme it, make it your own.', accent: 'var(--yellow)' },
+];
+
+const steps = [
+  { n: '01', title: 'Install in one line', body: 'Run the installer or grab a release binary. Ghost lands on your PATH in seconds.', icon: 'download' },
+  { n: '02', title: 'Launch & pick a model', body: 'Type ghost to open the TUI, or ghost free to jump straight onto a free model.', icon: 'command' },
+  { n: '03', title: 'Build at the speed of thought', body: 'Chat, generate code, run commands, and resume sessions — all without leaving the terminal.', icon: 'terminal' },
+];
+
+const freeModels = [
+  { name: 'Big Pickle', meta: 'OpenCode Zen', ctx: '200K', tag: 'stealth' },
+  { name: 'DeepSeek V4 Flash Free', meta: 'OpenCode Zen', ctx: '128K', tag: 'free' },
+  { name: 'Xiaomi MiMo V2.5 Free', meta: 'OpenCode Zen', ctx: '128K', tag: 'free' },
+  { name: 'Qwen 3.6 Plus Free', meta: 'OpenCode Zen', ctx: '128K', tag: 'free' },
+  { name: 'Nemotron 3 Super Free', meta: 'OpenCode Zen', ctx: '1M', tag: 'reason' },
+  { name: 'MiniMax M2.7 (thinking)', meta: 'OI VSCode', ctx: '200K', tag: 'reason' },
+];
+
+const stats = [
+  { v: 6, suffix: '', label: 'Free models, no key' },
+  { v: 3, suffix: '', label: 'Operating systems' },
+  { v: 1, suffix: 'M', label: 'Max context tokens' },
+  { v: 0, suffix: '$', label: 'Cost to start' },
+];
+---
+
+<BaseLayout>
+  <!-- ============================ HERO ============================ -->
+  <section class="hero" data-hero>
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <span class="pill" data-hero-item><span class="dot-live"></span> v1 ready · 100% free models</span>
+        <h1 data-hero-item>
+          The AI assistant that
+          <span class="gradient-text">haunts your terminal.</span>
+        </h1>
+        <p class="lede" data-hero-item>
+          Ghost is a lightning-fast, beautiful command-line AI — powered by free models,
+          themeable to the bone, and ready the second you install it.
+        </p>
+        <div class="hero-cta" data-hero-item>
+          <a class="btn btn-primary" data-magnetic href="#install">Install Ghost <Icon name="arrowRight" size={18} /></a>
+          <a class="btn btn-ghost" data-magnetic href={repo} target="_blank" rel="noopener"><Icon name="github" size={18} /> Star on GitHub</a>
+        </div>
+        <div class="hero-trust" data-hero-item>
+          <span><Icon name="check" size={15} /> No API key to start</span>
+          <span><Icon name="check" size={15} /> macOS · Linux · Windows</span>
+          <span><Icon name="check" size={15} /> MIT licensed</span>
+        </div>
+      </div>
+
+      <div class="hero-ghost" data-hero-item>
+        <GhostMascot size={300} id="hero-ghost" />
+      </div>
+    </div>
+
+    <div class="container hero-term" data-hero-item>
+      <div class="code-block" data-type={JSON.stringify(heroTerminal)}>
+        <div class="bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="title">zsh — ghost</span>
+        </div>
+        <pre><code data-type-out></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ STATS ============================ -->
+  <section class="stats-band">
+    <div class="container stats-grid" data-reveal-group>
+      {stats.map((s) => (
+        <div class="stat" data-reveal>
+          <span class="stat-num gradient-text" data-count={s.v} data-suffix={s.suffix}>0{s.suffix}</span>
+          <span class="stat-label">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ============================ FEATURES ============================ -->
+  <section id="features" class="section-pad">
+    <div class="container">
+      <div class="section-head" data-reveal-group>
+        <span class="eyebrow" data-reveal>Why Ghost</span>
+        <h2 data-reveal>Fast, free, and <span class="gradient-text">genuinely beautiful</span>.</h2>
+        <p class="sub" data-reveal>Every detail is tuned for people who live in the terminal.</p>
+      </div>
+      <div class="grid-3" data-reveal-group>
+        {features.map((f) => (
+          <div class="card feature" data-reveal>
+            <span class="feat-icon" style={`--c:${f.accent}`}><Icon name={f.icon} size={22} /></span>
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ HOW IT WORKS ============================ -->
+  <section class="section-pad how">
+    <div class="container">
+      <div class="section-head" data-reveal-group>
+        <span class="eyebrow" data-reveal>How it works</span>
+        <h2 data-reveal>From zero to answer in <span class="gradient-text">three steps</span>.</h2>
+      </div>
+      <div class="steps" data-reveal-group>
+        {steps.map((s) => (
+          <div class="step card" data-reveal>
+            <span class="step-n">{s.n}</span>
+            <span class="step-icon"><Icon name={s.icon} size={20} /></span>
+            <h3>{s.title}</h3>
+            <p>{s.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ MODELS ============================ -->
+  <section id="models" class="section-pad models-sec">
+    <div class="container">
+      <div class="section-head" data-reveal-group>
+        <span class="eyebrow" data-reveal>No key required</span>
+        <h2 data-reveal>Free models, <span class="gradient-text">ready on install</span>.</h2>
+        <p class="sub" data-reveal>These run the moment Ghost is installed. Add a key to unlock Nvidia NIM, Gemini, Groq, and more.</p>
+      </div>
+      <div class="grid-3" data-reveal-group>
+        {freeModels.map((m) => (
+          <div class="card model-card" data-reveal>
+            <div class="model-top">
+              <span class="model-mark"><Icon name="cpu" size={18} /></span>
+              <span class={`tag tag-${m.tag}`}>
+                {m.tag === 'reason' ? 'reasoning' : m.tag === 'stealth' ? 'stealth free' : 'free'}
+              </span>
+            </div>
+            <h3>{m.name}</h3>
+            <p class="model-meta">{m.meta} <span class="ctx">{m.ctx} ctx</span></p>
+          </div>
+        ))}
+      </div>
+      <p class="models-foot" data-reveal>
+        <Icon name="plug" size={16} /> Plus Nvidia NIM, Google Gemini, Groq, Cerebras, GitHub Copilot &amp; OpenRouter with your own key.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================ INSTALL ============================ -->
+  <section id="install" class="section-pad">
+    <div class="container grid-2" data-reveal-group>
+      <div data-reveal>
+        <span class="eyebrow">Get started</span>
+        <h2 class="install-h">One command and <span class="gradient-text">you're in</span>.</h2>
+        <p class="sub">The installer detects your OS and architecture, fetches the latest release, and drops Ghost on your PATH.</p>
+        <ul class="install-list">
+          <li><Icon name="check" size={17} /> macOS &amp; Linux one-liner</li>
+          <li><Icon name="check" size={17} /> Windows manual download</li>
+          <li><Icon name="check" size={17} /> Build from source with Go 1.26+</li>
+        </ul>
+        <a class="btn btn-primary" data-magnetic href={`${base}/docs/getting-started`}>Read the docs <Icon name="arrowRight" size={18} /></a>
+      </div>
+      <div data-reveal>
+        <div class="code-block install-code">
+          <div class="bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="title">install.sh</span>
+            <button class="copy-btn" data-copy={'curl -fsSL https://raw.githubusercontent.com/swadhinbiswas/Ghost/main/install.sh | bash'} aria-label="Copy install command">
+              <Icon name="copy" size={15} />
+            </button>
+          </div>
+          <pre><span class="tok-c"># macOS &amp; Linux</span>
+<span class="tok-p">$</span> curl -fsSL https://raw.githubusercontent.com/\
+swadhinbiswas/Ghost/main/install.sh | bash
+
+<span class="tok-c"># or build from source</span>
+<span class="tok-p">$</span> git clone https://github.com/swadhinbiswas/Ghost
+<span class="tok-p">$</span> cd Ghost <span class="tok-k">&amp;&amp;</span> go build -o ghost ./main.go</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CTA ============================ -->
+  <section class="cta-sec">
+    <div class="container cta-card" data-reveal-group>
+      <div class="cta-ghost" data-reveal><GhostMascot size={150} id="cta-ghost" /></div>
+      <h2 data-reveal>Ready to <span class="gradient-text">haunt your terminal</span>?</h2>
+      <p class="sub" data-reveal>Free, open source, and beautiful. Star it, install it, make it yours.</p>
+      <div class="hero-cta" data-reveal>
+        <a class="btn btn-primary" data-magnetic href="#install">Install now <Icon name="arrowRight" size={18} /></a>
+        <a class="btn btn-ghost" data-magnetic href={`${base}/docs`}>Browse the docs</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* hero */
+  .hero { padding: 5rem 0 2rem; }
+  .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2rem; align-items: center; margin-bottom: 3.5rem; }
+  .hero-copy h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); margin: 1.3rem 0; }
+  .lede { font-size: 1.22rem; color: var(--fg-dim); max-width: 35rem; }
+  .hero-cta { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+  .hero-trust { display: flex; gap: 1.5rem; margin-top: 1.6rem; flex-wrap: wrap; color: var(--fg-mute); font-size: .88rem; font-family: var(--font-mono); }
+  .hero-trust span { display: inline-flex; align-items: center; gap: .4rem; }
+  .hero-trust .icon { color: var(--green); }
+  .hero-ghost { display: grid; place-items: center; }
+  .hero-term { max-width: 760px; }
+  .hero-term pre { min-height: 200px; font-size: .88rem; }
+  .hero-term .tok-p, .hero-term code { color: var(--fg); }
+
+  /* stats */
+  .stats-band { padding: 1.5rem 0 3rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem;
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 2rem 1rem;
+    background: linear-gradient(165deg, var(--surface), rgba(20,18,30,.4)); backdrop-filter: blur(8px); }
+  .stat { text-align: center; }
+  .stat-num { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; display: block; }
+  .stat-label { color: var(--fg-mute); font-size: .85rem; margin-top: .2rem; display: block; }
+
+  /* features */
+  .feature h3 { font-size: 1.2rem; margin-bottom: .55rem; }
+  .feature p { color: var(--fg-dim); font-size: .96rem; }
+  .feat-icon { display: inline-grid; place-items: center; width: 50px; height: 50px; border-radius: 14px; margin-bottom: 1.1rem;
+    color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
+  .step { position: relative; padding-top: 2.4rem; }
+  .step-n { position: absolute; top: 1.2rem; right: 1.4rem; font-family: var(--font-display); font-weight: 700;
+    font-size: 2.4rem; color: transparent; -webkit-text-stroke: 1px var(--line-strong); }
+  .step-icon { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; margin-bottom: 1rem;
+    color: var(--purple); background: rgba(189,147,249,.12); border: 1px solid var(--line-strong); }
+  .step h3 { font-size: 1.18rem; margin-bottom: .5rem; }
+  .step p { color: var(--fg-dim); font-size: .95rem; }
+
+  /* models */
+  .models-sec { background: linear-gradient(180deg, transparent, rgba(40,38,58,.25), transparent); }
+  .model-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .model-mark { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 11px;
+    color: var(--cyan); background: rgba(139,233,253,.1); border: 1px solid rgba(139,233,253,.25); }
+  .model-card h3 { font-size: 1.12rem; }
+  .model-meta { font-family: var(--font-mono); font-size: .82rem; color: var(--fg-mute); margin-top: .35rem; }
+  .ctx { color: var(--purple); }
+  .tag { font-family: var(--font-mono); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; padding: .28rem .6rem; border-radius: 999px; white-space: nowrap; }
+  .tag-free { background: rgba(80,250,123,.12); color: var(--green); border: 1px solid rgba(80,250,123,.28); }
+  .tag-stealth { background: rgba(255,184,108,.12); color: var(--orange); border: 1px solid rgba(255,184,108,.28); }
+  .tag-reason { background: rgba(139,233,253,.12); color: var(--cyan); border: 1px solid rgba(139,233,253,.28); }
+  .models-foot { text-align: center; margin-top: 2.4rem; color: var(--fg-mute); font-size: .92rem; display: inline-flex; align-items: center; gap: .5rem; width: 100%; justify-content: center; }
+  .models-foot .icon { color: var(--pink); }
+
+  /* install */
+  .install-h { font-size: clamp(1.9rem, 3.8vw, 2.8rem); margin: .7rem 0; }
+  .install-list { list-style: none; margin: 1.5rem 0; display: grid; gap: .7rem; color: var(--fg-dim); }
+  .install-list li { display: flex; align-items: center; gap: .6rem; }
+  .install-list .icon { color: var(--green); }
+  .install-code pre { font-size: .8rem; }
+  .copy-btn { margin-left: .6rem; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px;
+    border: 1px solid var(--line); background: transparent; color: var(--fg-mute); cursor: pointer; transition: all .25s var(--ease); }
+  .copy-btn:hover { color: var(--cyan); border-color: var(--line-strong); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  /* cta */
+  .cta-sec { padding: 4rem 0 7rem; }
+  .cta-card { text-align: center; display: grid; place-items: center; gap: 1rem;
+    border: 1px solid var(--line); border-radius: 28px; padding: 3.5rem 2rem;
+    background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(189,147,249,.16), transparent 70%), linear-gradient(165deg, var(--surface), rgba(20,18,30,.4));
+    backdrop-filter: blur(10px); box-shadow: var(--shadow-card); }
+  .cta-ghost { margin-bottom: -1.5rem; }
+  .cta-card h2 { font-size: clamp(2rem, 4.5vw, 3.1rem); }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; text-align: center; }
+    .hero-copy .pill { display: inline-flex; }
+    .hero-cta, .hero-trust { justify-content: center; }
+    .lede { margin: 0 auto; }
+    .hero-ghost { order: -1; }
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .steps { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  // copy-to-clipboard for install command
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy || '');
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 1600);
+      } catch {}
+    });
+  });
+</script>
