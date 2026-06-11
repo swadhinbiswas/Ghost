@@ -1,0 +1,180 @@
+---
+// Isometric "control plane" hero scene, Ghost-themed.
+// Pure SVG geometry computed at build time; animated by anime.js (see motion.ts).
+
+const s = 58;          // tile size (px)
+const ox = 330;        // scene origin X
+const oy = 168;        // scene origin Y
+
+type P = [number, number];
+const proj = (x: number, y: number, z = 0): P => [
+  ox + (x - y) * s * 0.92,
+  oy + (x + y) * s * 0.5 - z * s,
+];
+const pts = (a: P[]) => a.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+
+// Lucide-style icon glyph inner markup (drawn with currentColor strokes).
+const icons = {
+  sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/>',
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1.5" x2="9" y2="4"/><line x1="15" y1="1.5" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22.5"/><line x1="15" y1="20" x2="15" y2="22.5"/><line x1="20" y1="9" x2="22.5" y2="9"/><line x1="20" y1="15" x2="22.5" y2="15"/><line x1="1.5" y1="9" x2="4" y2="9"/><line x1="1.5" y1="15" x2="4" y2="15"/>',
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  github: '<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>',
+};
+
+function slab(gx: number, gy: number, z: number, w = 1.9, d = 1.9, th = 0.34) {
+  const x0 = gx, x1 = gx + w, y0 = gy, y1 = gy + d;
+  const zt = z + th, zb = z;
+  const top = pts([proj(x0, y0, zt), proj(x1, y0, zt), proj(x1, y1, zt), proj(x0, y1, zt)]);
+  const front = pts([proj(x0, y1, zt), proj(x1, y1, zt), proj(x1, y1, zb), proj(x0, y1, zb)]);
+  const right = pts([proj(x1, y0, zt), proj(x1, y1, zt), proj(x1, y1, zb), proj(x1, y0, zb)]);
+  const c = proj(gx + w / 2, gy + d / 2, zt);
+  return { top, front, right, cx: c[0], cy: c[1] };
+}
+
+const core = proj(0.0, 0.0, 0.55);
+
+// Surrounding nodes: left = providers, right = features.
+const nodes = [
+  { ...slab(-2.7, 0.2, 0.9), label: 'OpenCode Zen', sub: 'free gateway', color: 'var(--purple)', icon: icons.sparkle },
+  { ...slab(-2.0, 1.7, 0.45), label: 'Nvidia NIM', sub: 'GPU models', color: 'var(--cyan)', icon: icons.cpu },
+  { ...slab(-1.3, 3.2, 0.0), label: 'OI VSCode', sub: 'MiniMax M2.7', color: 'var(--green)', icon: icons.code },
+  { ...slab(2.7, 0.2, 0.9), label: 'Free Models', sub: 'no API key', color: 'var(--pink)', icon: icons.zap },
+  { ...slab(2.0, 1.7, 0.45), label: 'Cross-platform', sub: 'mac · linux · win', color: 'var(--orange)', icon: icons.globe },
+  { ...slab(1.3, 3.2, 0.0), label: 'Open Source', sub: 'MIT licensed', color: 'var(--yellow)', icon: icons.github },
+];
+---
+
+<div class="iso-wrap" data-iso>
+  <svg class="iso-scene" viewBox="0 0 660 560" role="img" aria-label="Ghost connects free model providers in one terminal">
+    <defs>
+      <linearGradient id="iso-top" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#2a2740"/>
+        <stop offset="1" stop-color="#1b1928"/>
+      </linearGradient>
+      <linearGradient id="iso-top-core" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3a2f63"/>
+        <stop offset="1" stop-color="#241d3a"/>
+      </linearGradient>
+      <radialGradient id="iso-core-glow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#bd93f9" stop-opacity="0.9"/>
+        <stop offset="0.5" stop-color="#ff79c6" stop-opacity="0.3"/>
+        <stop offset="1" stop-color="#bd93f9" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="iso-ghost" x1="0" y1="0" x2="0.3" y2="1">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="45%" stop-color="#f3eeff"/>
+        <stop offset="100%" stop-color="#cdb4fc"/>
+      </linearGradient>
+      <filter id="iso-blur" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="9"/>
+      </filter>
+    </defs>
+
+    <!-- faint iso floor grid -->
+    <g stroke="rgba(160,150,210,0.10)" stroke-width="1" class="iso-grid">
+      {Array.from({ length: 9 }, (_, i) => {
+        const t = i - 4;
+        const a = proj(t, -4); const b = proj(t, 4);
+        const c = proj(-4, t); const d = proj(4, t);
+        return (
+          <>
+            <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} />
+            <line x1={c[0]} y1={c[1]} x2={d[0]} y2={d[1]} />
+          </>
+        );
+      })}
+    </g>
+
+    <!-- connector links from core to each node -->
+    <g class="iso-links" fill="none" stroke-width="2" stroke-linecap="round">
+      {nodes.map((n) => (
+        <path
+          class="iso-link"
+          d={`M ${core[0]} ${core[1]} L ${n.cx} ${n.cy}`}
+          stroke={n.color}
+          stroke-opacity="0.55"
+        />
+      ))}
+    </g>
+    <!-- traveling pulses along the links -->
+    <g class="iso-pulses">
+      {nodes.map((n) => (
+        <circle class="iso-pulse" r="3.2" fill={n.color} cx={core[0]} cy={core[1]}
+          data-x1={core[0]} data-y1={core[1]} data-x2={n.cx} data-y2={n.cy} />
+      ))}
+    </g>
+
+    <!-- surrounding node slabs -->
+    {nodes.map((n) => (
+      <g class="iso-slab">
+        <polygon points={n.front} fill="#141220"/>
+        <polygon points={n.right} fill="#0f0e18"/>
+        <polygon points={n.top} fill="url(#iso-top)" stroke={n.color} stroke-opacity="0.5" stroke-width="1"/>
+        <g transform={`translate(${(n.cx - 70).toFixed(1)} ${(n.cy - 17).toFixed(1)})`}>
+          <rect width="34" height="34" rx="10" fill={n.color} fill-opacity="0.16" stroke={n.color} stroke-opacity="0.55" stroke-width="1.2"/>
+          <g transform="translate(7 7) scale(0.83)" fill="none" stroke={n.color} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={n.icon} />
+        </g>
+        <text x={(n.cx - 28).toFixed(1)} y={(n.cy - 2).toFixed(1)} font-size="15.5" font-weight="700"
+          font-family="'Inter',system-ui,sans-serif" fill="#f3f1fb">{n.label}</text>
+        <text x={(n.cx - 28).toFixed(1)} y={(n.cy + 14).toFixed(1)} font-size="11" font-weight="500"
+          font-family="'JetBrains Mono',monospace" fill="#8a85a6" letter-spacing="0.3">{n.sub}</text>
+      </g>
+    ))}
+
+    <!-- central core platform -->
+    <g class="iso-core">
+      <ellipse cx={core[0]} cy={core[1] + 6} rx="150" ry="86" fill="url(#iso-core-glow)" filter="url(#iso-blur)" class="iso-core-glow"/>
+      {(() => { const c = slab(-1.05, -1.05, 0.0, 2.1, 2.1, 0.5); return (
+        <>
+          <polygon points={c.front} fill="#1a1530"/>
+          <polygon points={c.right} fill="#130f24"/>
+          <polygon points={c.top} fill="url(#iso-top-core)" stroke="#bd93f9" stroke-opacity="0.6" stroke-width="1.5"/>
+        </>
+      ); })()}
+      <!-- glowing core emblem -->
+      <ellipse cx={core[0]} cy={core[1]} rx="40" ry="21" fill="#bd93f9" opacity="0.22"/>
+      <g transform={`translate(${(core[0] - 13).toFixed(1)} ${(core[1] - 13).toFixed(1)}) scale(1.08)`}
+        fill="none" stroke="#e9d9ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="iso-emblem"
+        set:html={icons.sparkle} />
+      <!-- pulsing rings on the core -->
+      <ellipse class="iso-ring" cx={core[0]} cy={core[1]} rx="58" ry="30" fill="none" stroke="#bd93f9" stroke-opacity="0.6"/>
+      <ellipse class="iso-ring iso-ring2" cx={core[0]} cy={core[1]} rx="58" ry="30" fill="none" stroke="#ff79c6" stroke-opacity="0.5"/>
+    </g>
+
+    <!-- the ghost, floating above the core -->
+    <g class="iso-ghost" transform={`translate(${core[0]} ${core[1] - 96})`}>
+      <ellipse cx="0" cy="118" rx="46" ry="12" fill="#bd93f9" opacity="0.28" class="iso-ghost-shadow"/>
+      <g class="iso-ghost-body">
+        <ellipse cx="-34" cy="20" rx="9" ry="14" transform="rotate(20 -34 20)" fill="url(#iso-ghost)"/>
+        <ellipse cx="34" cy="20" rx="9" ry="14" transform="rotate(-20 34 20)" fill="url(#iso-ghost)"/>
+        <path d="M-40 6 Q-40 -52 0 -52 Q40 -52 40 6 L40 46
+                 Q40 56 32 56 Q25 56 22 48 Q19 56 12 56 Q5 56 2 48
+                 Q-1 56 -8 56 Q-15 56 -18 48 Q-21 56 -28 56 Q-40 56 -40 46 Z" fill="url(#iso-ghost)"/>
+        <ellipse cx="-19" cy="14" rx="9" ry="5" fill="#ff8ed0" fill-opacity="0.85"/>
+        <ellipse cx="19" cy="14" rx="9" ry="5" fill="#ff8ed0" fill-opacity="0.85"/>
+        <g class="iso-eyes">
+          <ellipse cx="-15" cy="-2" rx="8" ry="11" fill="#16121f"/>
+          <ellipse cx="15" cy="-2" rx="8" ry="11" fill="#16121f"/>
+          <circle cx="-12" cy="-6" r="3.2" fill="#fff"/>
+          <circle cx="18" cy="-6" r="3.2" fill="#fff"/>
+        </g>
+        <path d="M-6 12 Q0 19 6 12 Q0 16 -6 12 Z" fill="#16121f"/>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .iso-wrap { width: 100%; display: grid; place-items: center; }
+  .iso-scene { width: 100%; max-width: 620px; height: auto; overflow: visible; will-change: transform; }
+  .iso-link { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .iso-slab { will-change: transform; }
+  .iso-ring, .iso-ghost-body, .iso-eyes, .iso-core-glow { will-change: transform, opacity; }
+  .iso-eyes { transform-box: fill-box; transform-origin: center; }
+  .iso-emblem { transform-box: fill-box; transform-origin: center; will-change: transform; }
+  @media (prefers-reduced-motion: reduce) {
+    .iso-link { stroke-dasharray: none; stroke-dashoffset: 0; }
+  }
+</style>

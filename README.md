@@ -110,19 +110,6 @@ ghost --help               # see everything Ghost can do
 
 <br>
 
-## 📚 Documentation & Website
-
-The marketing site and full documentation live in [`site/`](site/) and are built with [Astro](https://astro.build/) (using [Bun](https://bun.sh/)).
-
-```bash
-cd site
-bun install
-bun run dev      # local preview at http://localhost:4321
-bun run build    # static build into site/dist
-```
-
-<br>
-
 ## 🛠️ Configuration
 
 Ghost reads JSON config from standard locations (`$XDG_CONFIG_HOME/ghost/ghost.json` or `~/.config/ghost/ghost.json`). A few useful environment variables:

@@ -1,15 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f8f8f2"/>
-      <stop offset="100%" stop-color="#bd93f9"/>
+    <linearGradient id="g" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#f3eeff"/>
+      <stop offset="100%" stop-color="#cdb4fc"/>
     </linearGradient>
   </defs>
-  <rect width="200" height="220" fill="#282a36" rx="40"/>
-  <path d="M50 105 Q50 40 100 40 Q150 40 150 105 L150 170
-           Q142 158 134 170 Q126 182 118 170 Q110 158 100 170
-           Q90 182 82 170 Q74 158 66 170 Q58 182 50 170 Z" fill="url(#g)"/>
-  <ellipse cx="80" cy="100" rx="9" ry="12" fill="#282a36"/>
-  <ellipse cx="120" cy="100" rx="9" ry="12" fill="#282a36"/>
-  <path d="M90 124 Q100 134 110 124 Q100 130 90 124 Z" fill="#282a36"/>
+  <rect width="240" height="240" rx="52" fill="#15131f"/>
+  <!-- arms -->
+  <ellipse cx="64" cy="150" rx="12" ry="18" transform="rotate(20 64 150)" fill="url(#g)"/>
+  <ellipse cx="176" cy="150" rx="12" ry="18" transform="rotate(-20 176 150)" fill="url(#g)"/>
+  <!-- chubby body -->
+  <path d="M62 132 Q62 50 120 50 Q178 50 178 132 L178 196
+           Q178 210 166 210 Q156 210 152 200 Q148 210 138 210 Q128 210 124 200
+           Q120 210 112 210 Q104 210 100 200 Q96 210 86 210 Q74 210 62 196 Z" fill="url(#g)"/>
+  <!-- cheeks -->
+  <ellipse cx="88" cy="150" rx="14" ry="8" fill="#ff8ed0" fill-opacity="0.85"/>
+  <ellipse cx="152" cy="150" rx="14" ry="8" fill="#ff8ed0" fill-opacity="0.85"/>
+  <!-- big eyes -->
+  <ellipse cx="96" cy="124" rx="14" ry="19" fill="#16121f"/>
+  <ellipse cx="144" cy="124" rx="14" ry="19" fill="#16121f"/>
+  <circle cx="101" cy="117" r="5.5" fill="#fff"/>
+  <circle cx="149" cy="117" r="5.5" fill="#fff"/>
+  <!-- smile -->
+  <path d="M112 152 Q120 162 128 152 Q120 158 112 152 Z" fill="#16121f"/>
 </svg>

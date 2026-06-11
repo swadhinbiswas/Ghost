@@ -9,20 +9,24 @@ const { size = 280, id = 'ghost-hero' } = Astro.props;
   <div class="ghost-shadow"></div>
 
   <div class="ghost-body-wrap">
-    <svg class="ghost-svg" viewBox="0 0 240 280" width={size} height={size * 1.16} role="img" aria-label="Ghost mascot">
+    <svg class="ghost-svg" viewBox="0 0 240 280" width={size} height={size * 1.16} role="img" aria-label="Cute ghost mascot">
       <defs>
         <linearGradient id={`${id}-skin`} x1="0" y1="0" x2="0.3" y2="1">
           <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="42%" stop-color="#efeaff"/>
-          <stop offset="100%" stop-color="#c9aefc"/>
+          <stop offset="42%" stop-color="#f3eeff"/>
+          <stop offset="100%" stop-color="#cdb4fc"/>
         </linearGradient>
-        <radialGradient id={`${id}-inner`} cx="50%" cy="38%" r="62%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+        <radialGradient id={`${id}-inner`} cx="50%" cy="34%" r="62%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
           <stop offset="100%" stop-color="#bd93f9" stop-opacity="0"/>
         </radialGradient>
         <radialGradient id={`${id}-cheek`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#ff79c6" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="#ff79c6" stop-opacity="0"/>
+          <stop offset="0%" stop-color="#ff8ed0" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#ff8ed0" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id={`${id}-eye`} cx="50%" cy="38%" r="65%">
+          <stop offset="0%" stop-color="#3a3450"/>
+          <stop offset="100%" stop-color="#16121f"/>
         </radialGradient>
         <filter id={`${id}-soft`} x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="3"/>
@@ -30,37 +34,50 @@ const { size = 280, id = 'ghost-hero' } = Astro.props;
       </defs>
 
       <!-- back glow layer -->
-      <path class="layer-back" d="M52 120 Q52 36 120 36 Q188 36 188 120 L188 214
-        Q176 196 164 212 Q152 228 140 212 Q128 196 120 212 Q112 196 100 212
-        Q88 228 76 212 Q64 196 52 214 Z"
+      <path class="layer-back" d="M44 134 Q44 40 120 40 Q196 40 196 134 L196 214
+        Q196 230 182 230 Q170 230 166 218 Q162 230 150 230 Q138 230 134 218
+        Q130 230 120 230 Q110 230 106 218 Q102 230 90 230 Q78 230 74 218
+        Q70 230 58 230 Q44 230 44 214 Z"
         fill={`url(#${id}-skin)`} filter={`url(#${id}-soft)`} opacity="0.35"
-        transform="translate(0 6) scale(1.04)" transform-origin="120 130"/>
+        transform="translate(0 6) scale(1.05)" transform-origin="120 140"/>
 
-      <!-- main body -->
-      <path class="layer-main" d="M58 122 Q58 44 120 44 Q182 44 182 122 L182 206
-        Q171 190 160 205 Q149 220 138 205 Q127 190 120 205 Q113 190 102 205
-        Q91 220 80 205 Q69 190 58 206 Z"
+      <!-- little arms (behind body) -->
+      <g fill={`url(#${id}-skin)`}>
+        <ellipse cx="46" cy="158" rx="14" ry="20" transform="rotate(18 46 158)"/>
+        <ellipse cx="194" cy="158" rx="14" ry="20" transform="rotate(-18 194 158)"/>
+      </g>
+
+      <!-- main body (rounded & chubby with 4 cute waves) -->
+      <path class="layer-main" d="M50 138 Q50 48 120 48 Q190 48 190 138 L190 210
+        Q190 226 177 226 Q166 226 162 215 Q158 226 147 226 Q136 226 132 215
+        Q128 226 120 226 Q112 226 108 215 Q104 226 93 226 Q82 226 78 215
+        Q74 226 63 226 Q50 226 50 210 Z"
         fill={`url(#${id}-skin)`}/>
-      <path d="M58 122 Q58 44 120 44 Q182 44 182 122 L182 206
-        Q171 190 160 205 Q149 220 138 205 Q127 190 120 205 Q113 190 102 205
-        Q91 220 80 205 Q69 190 58 206 Z" fill={`url(#${id}-inner)`}/>
+      <path d="M50 138 Q50 48 120 48 Q190 48 190 138 L190 210
+        Q190 226 177 226 Q166 226 162 215 Q158 226 147 226 Q136 226 132 215
+        Q128 226 120 226 Q112 226 108 215 Q104 226 93 226 Q82 226 78 215
+        Q74 226 63 226 Q50 226 50 210 Z" fill={`url(#${id}-inner)`}/>
 
-      <!-- cheeks -->
-      <ellipse cx="86" cy="132" rx="16" ry="10" fill={`url(#${id}-cheek)`}/>
-      <ellipse cx="154" cy="132" rx="16" ry="10" fill={`url(#${id}-cheek)`}/>
+      <!-- rosy cheeks -->
+      <ellipse cx="82" cy="148" rx="15" ry="9" fill={`url(#${id}-cheek)`}/>
+      <ellipse cx="158" cy="148" rx="15" ry="9" fill={`url(#${id}-cheek)`}/>
 
-      <!-- face -->
-      <g class="ghost-eyes" transform-origin="120 112">
+      <!-- big sparkly eyes -->
+      <g class="ghost-eyes" transform-origin="120 120">
         <g class="eye">
-          <ellipse cx="94" cy="112" rx="12.5" ry="17" fill="#1a1726"/>
-          <circle class="pupil" cx="98" cy="106" r="4.2" fill="#fff"/>
+          <ellipse cx="94" cy="120" rx="15" ry="20" fill={`url(#${id}-eye)`}/>
+          <circle class="pupil" cx="99" cy="113" r="5.5" fill="#fff"/>
+          <circle class="pupil" cx="89" cy="126" r="2.6" fill="#fff" opacity="0.85"/>
         </g>
         <g class="eye">
-          <ellipse cx="146" cy="112" rx="12.5" ry="17" fill="#1a1726"/>
-          <circle class="pupil" cx="150" cy="106" r="4.2" fill="#fff"/>
+          <ellipse cx="146" cy="120" rx="15" ry="20" fill={`url(#${id}-eye)`}/>
+          <circle class="pupil" cx="151" cy="113" r="5.5" fill="#fff"/>
+          <circle class="pupil" cx="141" cy="126" r="2.6" fill="#fff" opacity="0.85"/>
         </g>
       </g>
-      <path d="M106 146 Q120 162 134 146 Q120 154 106 146 Z" fill="#1a1726"/>
+
+      <!-- tiny happy mouth -->
+      <path d="M112 150 Q120 160 128 150 Q120 156 112 150 Z" fill="#16121f"/>
     </svg>
   </div>
 </div>

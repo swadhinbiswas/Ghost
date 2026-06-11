@@ -4,6 +4,8 @@ const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function initMotion() {
   navScroll();
+  scrollProgress();
+  initIsoHero();
   if (reduce) {
     document.querySelectorAll<HTMLElement>('[data-reveal]').forEach((el) => {
       el.style.opacity = '1';
@@ -28,6 +30,21 @@ function navScroll() {
   const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 12);
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
+}
+
+/* ---- top scroll-progress bar ---- */
+function scrollProgress() {
+  const bar = document.querySelector<HTMLElement>('[data-progress]');
+  if (!bar) return;
+  const update = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+    bar.style.width = pct + '%';
+  };
+  update();
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
 }
 
 /* ---- hero entrance choreography ---- */
@@ -193,4 +210,97 @@ function counters() {
     }, { threshold: 0.6 });
     io.observe(el);
   });
+}
+
+/* ---- isometric control-plane hero ---- */
+function initIsoHero() {
+  const scene = document.querySelector<SVGElement>('[data-iso] .iso-scene');
+  if (!scene) return;
+
+  // Draw the connector links (and keep them visible even with reduced motion).
+  const links = scene.querySelectorAll<SVGPathElement>('.iso-link');
+  links.forEach((p) => {
+    const len = p.getTotalLength();
+    p.style.strokeDasharray = `${len}`;
+    p.style.strokeDashoffset = reduce ? '0' : `${len}`;
+  });
+
+  if (reduce) return;
+
+  // Links draw in.
+  anime({
+    targets: '.iso-link',
+    strokeDashoffset: [anime.setDashoffset, 0],
+    duration: 1100,
+    delay: anime.stagger(120, { start: 300 }),
+    easing: 'easeInOutSine',
+  });
+
+  // Slabs fade/scale in, then float forever (staggered).
+  const slabs = scene.querySelectorAll<SVGGElement>('.iso-slab');
+  anime({
+    targets: slabs,
+    opacity: [0, 1],
+    duration: 700,
+    delay: anime.stagger(90, { start: 200 }),
+    easing: 'easeOutQuad',
+  });
+  slabs.forEach((slab, i) => {
+    anime({
+      targets: slab,
+      translateY: [-5, 7],
+      duration: 3200 + i * 180,
+      delay: i * 160,
+      direction: 'alternate',
+      loop: true,
+      easing: 'easeInOutSine',
+    });
+  });
+
+  // Ghost bob + shadow breathing.
+  anime({ targets: '.iso-ghost-body', translateY: [-6, 8], duration: 3600, direction: 'alternate', loop: true, easing: 'easeInOutSine' });
+  anime({ targets: '.iso-ghost-shadow', scaleX: [1.05, 0.8], opacity: [0.3, 0.16], duration: 3600, direction: 'alternate', loop: true, easing: 'easeInOutSine' });
+
+  // Core glow pulse.
+  anime({ targets: '.iso-core-glow', scale: [1, 1.12], opacity: [0.7, 1], duration: 2600, direction: 'alternate', loop: true, easing: 'easeInOutSine' });
+
+  // Core emblem slow spin + shimmer.
+  anime({ targets: '.iso-emblem', rotate: '1turn', duration: 14000, loop: true, easing: 'linear' });
+
+  // Radar rings expanding from the core.
+  scene.querySelectorAll<SVGEllipseElement>('.iso-ring').forEach((ring, i) => {
+    anime({
+      targets: ring,
+      scale: [0.5, 1.4],
+      opacity: [0.7, 0],
+      transformOrigin: ['50% 50%', '50% 50%'],
+      duration: 3000,
+      delay: i * 1500,
+      loop: true,
+      easing: 'easeOutSine',
+    });
+  });
+
+  // Data pulses travel along the links from the core outward.
+  scene.querySelectorAll<SVGCircleElement>('.iso-pulse').forEach((dot, i) => {
+    const x1 = Number(dot.dataset.x1), y1 = Number(dot.dataset.y1);
+    const x2 = Number(dot.dataset.x2), y2 = Number(dot.dataset.y2);
+    anime({
+      targets: dot,
+      cx: [x1, x2],
+      cy: [y1, y2],
+      opacity: [{ value: 1, duration: 200 }, { value: 1, duration: 800 }, { value: 0, duration: 300 }],
+      duration: 1800,
+      delay: i * 320,
+      loop: true,
+      easing: 'easeInOutQuad',
+    });
+  });
+
+  // Subtle parallax tied to the pointer.
+  window.addEventListener('mousemove', (e) => {
+    const dx = (e.clientX / window.innerWidth - 0.5) * 16;
+    const dy = (e.clientY / window.innerHeight - 0.5) * 12;
+    scene.style.transform = `translate(${dx}px, ${dy}px)`;
+  }, { passive: true });
 }

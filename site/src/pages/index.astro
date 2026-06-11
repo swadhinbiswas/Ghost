@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GhostMascot from '../components/GhostMascot.astro';
+import IsoHero from '../components/IsoHero.astro';
 import Icon from '../components/Icon.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -74,7 +75,7 @@ const stats = [
       </div>
 
       <div class="hero-ghost" data-hero-item>
-        <GhostMascot size={300} id="hero-ghost" />
+        <IsoHero />
       </div>
     </div>
 
@@ -85,6 +86,21 @@ const stats = [
           <span class="title">zsh — ghost</span>
         </div>
         <pre><code data-type-out></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PROVIDER STRIP ============================ -->
+  <section class="strip">
+    <div class="container">
+      <p class="strip-label">Powered by free, open model providers</p>
+      <div class="strip-logos" data-reveal-group>
+        <span class="strip-item" data-reveal><Icon name="sparkle" size={18} /> OpenCode Zen</span>
+        <span class="strip-item" data-reveal><Icon name="cpu" size={18} /> Nvidia NIM</span>
+        <span class="strip-item" data-reveal><Icon name="code" size={18} /> OI VSCode</span>
+        <span class="strip-item" data-reveal><Icon name="globe" size={18} /> Google Gemini</span>
+        <span class="strip-item" data-reveal><Icon name="bolt" size={18} /> Groq</span>
+        <span class="strip-item" data-reveal><Icon name="layers" size={18} /> OpenRouter</span>
       </div>
     </div>
   </section>
@@ -221,7 +237,7 @@ swadhinbiswas/Ghost/main/install.sh | bash
 <style>
   /* hero */
   .hero { padding: 5rem 0 2rem; }
-  .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2rem; align-items: center; margin-bottom: 3.5rem; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1.05fr; gap: 2rem; align-items: center; margin-bottom: 3.5rem; }
   .hero-copy h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); margin: 1.3rem 0; }
   .lede { font-size: 1.22rem; color: var(--fg-dim); max-width: 35rem; }
   .hero-cta { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
@@ -232,6 +248,14 @@ swadhinbiswas/Ghost/main/install.sh | bash
   .hero-term { max-width: 760px; }
   .hero-term pre { min-height: 200px; font-size: .88rem; }
   .hero-term .tok-p, .hero-term code { color: var(--fg); }
+
+  /* provider strip */
+  .strip { padding: 2.5rem 0 1rem; }
+  .strip-label { text-align: center; color: var(--fg-mute); font-family: var(--font-mono); font-size: .8rem; text-transform: uppercase; letter-spacing: .2em; margin-bottom: 1.4rem; }
+  .strip-logos { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.4rem 2.2rem; }
+  .strip-item { display: inline-flex; align-items: center; gap: .5rem; color: var(--fg-dim); font-weight: 600; font-size: 1rem; opacity: .82; transition: opacity .25s var(--ease), color .25s var(--ease); }
+  .strip-item:hover { opacity: 1; color: var(--fg); }
+  .strip-item .icon { color: var(--purple); }
 
   /* stats */
   .stats-band { padding: 1.5rem 0 3rem; }

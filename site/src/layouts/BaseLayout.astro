@@ -39,6 +39,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <script is:inline>document.documentElement.classList.remove('no-js');</script>
   </head>
   <body>
+    <div class="scroll-progress" data-progress aria-hidden="true"></div>
     {ambient && <Ambient />}
     <div class="page">
       <Nav />
@@ -56,4 +57,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 <style>
   .page { position: relative; z-index: 1; }
   main { min-height: 60vh; }
+  .scroll-progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--purple), var(--pink), var(--orange));
+    z-index: 100; box-shadow: 0 0 12px rgba(189,147,249,.7);
+    transition: width .1s linear;
+  }
 </style>
