@@ -9,7 +9,7 @@ require (
 	charm.land/fang/v2 v2.0.1
 	charm.land/fantasy v0.31.0
 	charm.land/glamour/v2 v2.0.0
-	charm.land/lipgloss/v2 v2.0.2
+	charm.land/lipgloss/v2 v2.0.3
 	charm.land/log/v2 v2.0.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.12.0
@@ -22,7 +22,7 @@ require (
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/openai-go v0.0.0-20260319145158-d0740cc34266
 	github.com/charmbracelet/ultraviolet v0.0.0-20260205113103-524a6607adb8
-	github.com/charmbracelet/x/ansi v0.11.6
+	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/charmbracelet/x/editor v0.2.0
 	github.com/charmbracelet/x/etag v0.2.0
 	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260109001716-2fbdffcb221f
@@ -44,7 +44,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/invopop/jsonschema v0.13.0
 	github.com/jordanella/go-ansi-paintbrush v0.0.0-20240728195301-b7ad996ecf3d
-	github.com/lucasb-eyer/go-colorful v1.3.0
+	github.com/lucasb-eyer/go-colorful v1.4.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/ncruces/go-sqlite3 v0.33.0
@@ -139,7 +139,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-runewidth v0.0.21 // indirect
+	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
